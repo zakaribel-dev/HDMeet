@@ -39,12 +39,136 @@ body {
   align-items: center;
   justify-content: center;
   text-align: center;
+  margin: 10px;
 }
 
 .btn-down {
-  z-index: 2;
-  position: fixed;
-  bottom: 0px;
+  z-index: 100;
   width: 100%;
   height: auto;
+  padding: 1%;
+}
+
+.copy{
+ position: absolute !important;
+ right: 73% !important;
+ top: 0% !important;
+ background-color: #8EC8F2  !important;
+ color:  white !important;
+ font-weight: 600  !important;
+}	
+
+.newConf {
+position: absolute !important;
+right: 10% !important;
+top: 0% !important;
+background-color: #8EC8F2  !important;
+color:  white !important;
+font-weight: 600  !important;
+}
+
+.rodal-dialog{
+    width: 400px  !important;
+    height: 550px !important ;
+    animation-duration: 300ms !important;
+}
+
+
+.bodyRodal{
+  overflow: "auto" !important;
+  overflow-y: auto !important;
+  height: 400px !important;
+  text-align: left !important;
+  border-radius: 10px !important;
+  padding: 5%  !important;
+}
+
+.btnSendMsg{
+  background-color: #8EC8F2  !important;
+  color:  white !important;
+}
+
+.logoInConf{
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.btnConnect{
+  margin: 10px !important;
+  background-color: white !important;
+  color: #8EC8F2 !important;
+  font-weight: 600  !important;
+}
+
+.sidebar {
+  width: 250px;
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: #f3f3f3;
+  border-left: 1px solid #ccc;
+  padding: 15px;
+  overflow-y: auto;
+}
+
+.video-chat-container {
+  padding-right: 250px; 
+}
+
+
+.sidebar {
+  width: 250px;
+  position: fixed;
+  right: -250px;
+  top: 0;
+  bottom: 0;
+  background-color: #f3f3f3;
+  border-left: 1px solid #ccc;
+  padding: 15px;
+  overflow-y: auto;
+  transition: right 0.3s; 
+}
+
+
+.toggle-button {
+  color: black !important;
+  background-color: #8EC8F2  !important;
+  color:  white !important;
+  font-weight: 600  !important;
+
+}
+
+.video-chat-container {
+  position: relative; /* Ajouté pour la position relative du bouton */
+  padding-right: 250px; /* Ajustez en fonction de la largeur de votre sidebar */
+}
+
+
+.button-show {
+  position: absolute !important;
+  width: 150px !important;
+  top: 0 !important;
+}
+
+.sidebar {
+  width: 250px;
+  position: fixed;
+  right: -250px; /* Démarre cachée */
+  top: 0;
+  bottom: 0;
+  background-color: #f3f3f3;
+  border-left: 1px solid #ccc;
+  padding: 15px;
+  overflow-y: auto;
+  transition: right 0.3s; /* Animation */
+}
+
+.video-chat-container h3{
+  margin-top: 20% !important;
+}
+
+.sidebar.open {
+  right: 0; /* Déplace la barre latérale pour qu'elle soit visible */
 }

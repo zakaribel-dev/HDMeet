@@ -13,102 +13,105 @@ var io = require('socket.io')(server)
 app.use(cors())
 app.use(bodyParser.json())
 
-if(process.env.NODE_ENV==='production'){
-	app.use(express.static(__dirname+"/build"))
+if (process.env.NODE_ENV === 'production') {
+	app.use(express.static(__dirname + "/build"))
 	app.get("*", (req, res) => {
-		res.sendFile(path.join(__dirname+"/build/index.html"))
+		res.sendFile(path.join(__dirname + "/build/index.html"))
 	})
 }
 app.set('port', (process.env.PORT || 4001))
 
 sanitizeString = (str) => {
-	return xss(str)
+	return xss(str)  // cette bibliotheque proteges des faille xss
 }
 
 connections = {}
 messages = {}
 timeOnline = {}
+let roomUsers = {};
 
 io.on('connection', (socket) => {
 
-	socket.on('join-call', (path) => {
-		if(connections[path] === undefined){
-			connections[path] = []
-		}
-		connections[path].push(socket.id)
+    socket.on('join-call', (path, username) => {
+        socket.username = username;
+		console.log(`User joined: ${username} with ID: ${socket.id} in room: ${path}`);
+		io.to(socket.id).emit('update-user-list', roomUsers[path]);
 
-		timeOnline[socket.id] = new Date()
+        if (connections[path] === undefined) {
+            connections[path] = [];
+        }
+        connections[path].push(socket.id);
 
-		for(let a = 0; a < connections[path].length; ++a){
-			io.to(connections[path][a]).emit("user-joined", socket.id, connections[path])
-		}
+        timeOnline[socket.id] = new Date();
 
-		if(messages[path] !== undefined){
-			for(let a = 0; a < messages[path].length; ++a){
-				io.to(socket.id).emit("chat-message", messages[path][a]['data'], 
+        if (!roomUsers[path]) {
+            roomUsers[path] = [];
+        }
+        roomUsers[path].push({ id: socket.id, username });
+
+        // Retarder légèrement l'envoi de la liste des utilisateurs
+		console.log('Sending updated user list:', roomUsers[path]);
+		io.to(path).emit('update-user-list', roomUsers[path]);
+        for (let a = 0; a < connections[path].length; ++a) {
+            io.to(connections[path][a]).emit("user-joined", socket.id, connections[path], username);
+        }
+		if (messages[path] !== undefined) {
+			for (let a = 0; a < messages[path].length; ++a) {
+				io.to(socket.id).emit("chat-message", messages[path][a]['data'],
 					messages[path][a]['sender'], messages[path][a]['socket-id-sender'])
 			}
 		}
 
-		console.log(path, connections[path])
 	})
 
-	socket.on('signal', (toId, message) => {
-		io.to(toId).emit('signal', socket.id, message)
+	socket.on('signal', (toId, message) => { // message contient le SDP généré avec createOffer coté front
+		io.to(toId).emit('signal', socket.id, message) // on va emmetre le signal d'un socketId  vers les autres sockets
 	})
 
 	socket.on('chat-message', (data, sender) => {
-		data = sanitizeString(data)
-		sender = sanitizeString(sender)
+		data = sanitizeString(data);// on rend safe (faille xss)
+		sender = sanitizeString(sender); // idem
 
-		var key
-		var ok = false
-		for (const [k, v] of Object.entries(connections)) {
-			for(let a = 0; a < v.length; ++a){
-				if(v[a] === socket.id){
-					key = k
-					ok = true
-				}
+		for (const key in connections) {
+			if (connections[key].includes(socket.id)) {
+
+				messages[key] = messages[key] || [];
+
+				messages[key].push({ sender, data, 'socket-id-sender': socket.id });
+				connections[key].forEach((recipient) => {
+					io.to(recipient).emit("chat-message", data, sender, socket.id);
+				});
+				break;
 			}
 		}
+	});
 
-		if(ok === true){
-			if(messages[key] === undefined){
-				messages[key] = []
-			}
-			messages[key].push({"sender": sender, "data": data, "socket-id-sender": socket.id})
-			console.log("message", key, ":", sender, data)
-
-			for(let a = 0; a < connections[key].length; ++a){
-				io.to(connections[key][a]).emit("chat-message", data, sender, socket.id)
-			}
-		}
-	})
 
 	socket.on('disconnect', () => {
-		var diffTime = Math.abs(timeOnline[socket.id] - new Date())
-		var key
-		for (const [k, v] of JSON.parse(JSON.stringify(Object.entries(connections)))) {
-			for(let a = 0; a < v.length; ++a){
-				if(v[a] === socket.id){
-					key = k
+		for (const key in connections) {
+			const index = connections[key].indexOf(socket.id);
 
-					for(let a = 0; a < connections[key].length; ++a){
-						io.to(connections[key][a]).emit("user-left", socket.id)
-					}
-			
-					var index = connections[key].indexOf(socket.id)
-					connections[key].splice(index, 1)
+			if (index !== -1) {
+				connections[key].splice(index, 1);
 
-					console.log(key, socket.id, Math.ceil(diffTime / 1000))
+				connections[key].forEach((recipient) => {
+					io.to(recipient).emit("user-left", socket.id);
+				});
 
-					if(connections[key].length === 0){
-						delete connections[key]
-					}
+				console.log(`User left: ${socket.username} with ID: ${socket.id}`);
+				console.log('Updated user list after disconnect:', roomUsers[path]);
+				if (connections[key].length === 0) {
+					delete connections[key];
 				}
+				break;
 			}
 		}
-	})
+		for (let path in roomUsers) {
+            roomUsers[path] = roomUsers[path].filter(user => user.id !== socket.id);
+            // Mettre à jour la liste des utilisateurs pour tous les clients de la room
+            io.to(path).emit('update-user-list', roomUsers[path]);
+        }
+	});
 })
 
 server.listen(app.get('port'), () => {

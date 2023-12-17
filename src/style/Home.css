@@ -13,4 +13,13 @@ body {
 	align-items: center;
 	justify-content: center;
 	text-align: center;
+
 }
+
+.startBtn{
+margin: 20px !important;
+background-color: white  !important;
+color: #8EC8F2  !important;
+font-weight: 700  !important;
+}
+
