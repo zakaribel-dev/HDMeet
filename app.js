@@ -114,6 +114,11 @@ io.on('connection', (socket) => {
 	});
 })
 
+app.get('/test', (req, res) => {
+	res.send('Hello World');
+  });
+
+
 server.listen(app.get('port'), () => {
 	console.log("listening on", app.get('port'))
 })
