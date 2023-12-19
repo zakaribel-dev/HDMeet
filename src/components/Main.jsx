@@ -29,8 +29,9 @@ import "../style/Video.css"
 
 const server_url =
   process.env.NODE_ENV === "production"
-    ? "https://zakaribel.com"
-    : "http://localhost:4001"
+    ? "http://195.35.25.238:4001"
+    : "http://localhost:4001";
+
 
 // Pourquoi je déclare ces sortes de states global ?
 //Parce qu'à chaque fois qu'un utilisateur join une room, IL VA CREER UNE INSTANCE VIDEO
