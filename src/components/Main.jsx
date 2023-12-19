@@ -15,21 +15,19 @@ import Typography from "@material-ui/core/Typography"
 import userConnectedSound from "../assets/user_connected.mp3"
 import userDisconnectedSound from "../assets/disconnected.mp3"
 import messageSound from "../assets/message_sound.mp3"
-
 import Rodal from "rodal"
-
 import "rodal/lib/rodal.css"
-import { message } from "antd" // superbe bibliotheque..
+import { message } from "antd" // superbe bibliotheque
 import "antd/dist/antd.css"
-
 import { Row } from "reactstrap"
-
 import "bootstrap/dist/css/bootstrap.css"
 import "../style/Video.css"
 
+
+// attention à faire en sorte qu'il y ait pas de souci avec protocol SSL (ça m'a bien fait chier)
 const server_url =
   process.env.NODE_ENV === "production"
-    ? "http://195.35.25.238:4001"
+    ? "http://195.35.25.238:4001" 
     : "http://localhost:4001";
 
 
@@ -152,23 +150,27 @@ class Main extends Component {
       (this.state.video && this.videoAvailable) ||
       (this.state.audio && this.audioAvailable)
     ) {
-      navigator.mediaDevices
-        .getUserMedia({ video: this.state.video, audio: this.state.audio })
-        .then(this.getUserMediaSuccess)
+      navigator.mediaDevices 
+  // en param je mets ce que je veux récuperer (l'utilisateur va recevoir une demande pour acceder à son micro + caméra)
+        .getUserMedia({ video: this.state.video, audio: this.state.audio }) 
+          // ce machin va mretourner un obj "MediaStream" qui est simplement le flux que j'ai récupéré
+        .then(this.getUserMediaSuccess)//si c'est good j'apelle getUserMediaSuccess qui recuperera le MediaStream en param
         .then((stream) => {})
         .catch((e) => console.log(e))
     } else {
       try {
-        let tracks = this.myVideo.current.srcObject.getTracks()
+//si l'utilisateur n'accepte pas l'acces à sa cam + audio parce qu'il est grave timide alors on capture pas son stream
+        let tracks = this.myVideo.current.srcObject.getTracks() 
         tracks.forEach((track) => track.stop())
-      } catch (e) {}
+      } catch (e) {  console.log(e) }
     }
   }
 
   getUserMediaSuccess = (stream) => {
-    // Arrête les pistes du flux local actuel, s'il y en a.
+// "stream" contient mon objet MediaStream qui m'est retourné quand l'user a accepté qu'on ait acces à sa cam + micro..
+//(voir plus haut dans getUserMedia)
 
-    // Met à jour le flux local avec le nouveau flux de la caméra/microphone.
+// Met à jour le flux local avec le nouveau flux de la caméra/microphone.
     window.localStream = stream
     this.myVideo.current.srcObject = stream
 
@@ -177,7 +179,8 @@ class Main extends Component {
       if (id === socketId) continue // la jdis que si dans la liste des sockets ya une id qui correspond à MA socketId(moi)
       //alors je saute l'itération, jlui dis de pas calculer et de continuer son petit bonhomme de chemin
 
-      connections[id].addStream(window.localStream) //je stream la pov du streamer à tous les utilisateurs dans la room
+      //je stream la ganache du streamer à tous les users dans la room en ajoutant le flux actuel à toute les connexions webRTC
+      connections[id].addStream(window.localStream) 
 
       // ici je DOIS créer une offre qui contient une "SDP" (go check https://developer.mozilla.org/fr/docs/Glossary/SDP )
       // et ce sera envoyé aux autres users
@@ -185,7 +188,10 @@ class Main extends Component {
         .createOffer()
         .then((description) => connections[id].setLocalDescription(description))
         .then(() => {
-          // du coup j'envoie tout ça via une websocket.. mon emission "signal" contiendra mon offer pour que tous les autres users puisse la receptionner
+          // du coup j'envoie tout ça via une websocket..
+          // mon emission "signal" contiendra mon offer pour que tous les autres users puisse la receptionner
+          // createOffer qui va creer une SDP est un processus OBLIGATOIRE pour établir une connexion WebRTC 
+          // c'est comme si t'allais à la banque pour ouvrir un compte et tu signes aucun papiers..
           socket.emit(
             "signal",
             id,
@@ -245,10 +251,11 @@ class Main extends Component {
   // partage d'ecran
   screenSharePermission = () => {
     if (this.state.screen) {
+      //displayMedia c'est le partage donc à ne pas confondre avec usermedia qui est la webcam!
       if (navigator.mediaDevices.getDisplayMedia) {
         navigator.mediaDevices
           .getDisplayMedia({ video: true, audio: true }) // je précise un obj d'options(video+audio activés durant partage)
-          .then(this.screenShareGranted)
+          .then(this.screenShareGranted) // une fois le flux récupéré j'appelle screenShareGranted pour le partage
           .catch((e) => console.log(e))
       }
     }
@@ -256,14 +263,17 @@ class Main extends Component {
 
   screenShareGranted = (stream) => {
     try {
-      window.localStream.getTracks().forEach((track) => track.stop())
+      //j'arrete de diffuser le stream de l'user qui souhaite partager son écran
+      window.localStream.getTracks().forEach((track) => track.stop()) 
     } catch (e) {
       console.log(e)
     }
 
-    window.localStream = stream
-    this.myVideo.current.srcObject = stream
-    this.enterFullScreenMode(socketId)
+    // jattribue le stream de mon partage à une variable globale "window.localStream = stream "
+    //Ca me fait uen reference locale qui fait que je peux la modifier si je veux gerer la transition 
+    //entre webcam et partage par exemple ou genre désactiver la cam dans d'autres circonstances
+    window.localStream = stream 
+    this.myVideo.current.srcObject = stream // je veux diffuser mon stream dans mon element html "video"
 
     for (let id in connections) {
       if (id === socketId) continue
@@ -271,6 +281,7 @@ class Main extends Component {
       connections[id].addStream(window.localStream)
 
       connections[id].createOffer().then((description) => {
+    // évidamment si je veux partager ça aux autres utilisateurs je dois creer une "offer" qui contiendra mon SDP
         connections[id]
           .setLocalDescription(description)
           .then(() => {
@@ -758,11 +769,7 @@ class Main extends Component {
             {/* BARRE DE CONTROLES !*/}
             <div
               className="btn-down"
-              style={{
-                backgroundColor: "whitesmoke",
-                color: "whitesmoke",
-                textAlign: "center",
-              }}
+              
             >
               <Typography variant="body1">
                 <span className="online-indicator"></span>
