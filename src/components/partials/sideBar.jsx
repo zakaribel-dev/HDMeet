@@ -14,6 +14,7 @@ class Sidebar extends Component {
                 <Button className="toggle-button" onClick={toggleSidebar}>
                     {isSidebarOpen ? "Cacher" : "Afficher"}
                 </Button>
+                <div className='smallContainer'>
                 <h3>Utilisateurs Connectés</h3>
                 <ul>
                     {Object.values(usernames).map((username, index) => (
@@ -23,6 +24,7 @@ class Sidebar extends Component {
                         </li>
                     ))}
                 </ul>
+                </div>
             </div>
         );
     }

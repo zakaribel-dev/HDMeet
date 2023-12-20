@@ -19,10 +19,9 @@ import ControlBar from './partials/controlBar'
 
 // attention à faire en sorte qu'il y ait pas de souci avec protocol SSL (ça m'a bien fait chier)
 const server_url =
-  process.env.NODE_ENV === "production"  // je définis NODE_ENV dans un script "server" (go voir package.json)
+  process.env.NODE_ENV === "production"  //je définis NODE_ENV dans un script "server" (go voir package.json)
     ? "http://195.35.25.238:4001"
     : "http://localhost:4001"
-
 
 
 
@@ -145,7 +144,7 @@ class Main extends Component {
       // ici je DOIS créer une offre qui contient un "SDP" (go check https://developer.mozilla.org/fr/docs/Glossary/SDP )
       // et ce sera envoyé aux autres users
       connections[id]
-        .createOffer()
+        .createOffer() 
         .then((description) => connections[id].setLocalDescription(description))
         .then(() => {
           // du coup j'envoie tout ça via une websocket..
@@ -180,7 +179,7 @@ class Main extends Component {
 
   // du coup lorsqu'on désactive la caméra et l'audio, je lance black et silence qui vont creer un flux noir + supprimer l'audio
             let blackSilence = () =>
-              new MediaStream([this.black(), this.silence()])
+              new MediaStream([this.silence()])
             window.localStream = blackSilence()
             this.myVideo.current.srcObject = window.localStream
 
@@ -211,7 +210,7 @@ class Main extends Component {
   screenSharePermission = () => {
     if (this.state.screen) {
       //displayMedia c'est le partage donc à ne pas confondre avec usermedia qui est la webcam!
-      if (navigator.mediaDevices.getDisplayMedia) {
+      if (navigator.mediaDevices.getDisplayMedia) { //verifie si le partage est dispo (si je partage déjà sur gather ou zoom par exemple, ça marchera pas)
         navigator.mediaDevices
           .getDisplayMedia({ video: true, audio: true }) // je précise un obj d'options(video+audio activés durant partage)
           .then(this.screenShareGranted) // une fois le flux récupéré j'appelle screenShareGranted pour le partage
@@ -240,7 +239,7 @@ class Main extends Component {
       connections[id].addStream(window.localStream)
 
       connections[id].createOffer().then((description) => {
-        // évidamment si je veux partager ça aux autres utilisateurs je dois creer une "offer" qui contiendra mon SDP
+ // évidamment si je veux partager ça aux autres utilisateurs je dois creer une "offer" qui contiendra mon SDP
         connections[id]
           .setLocalDescription(description)
           .then(() => {
@@ -482,6 +481,7 @@ class Main extends Component {
       socket.on("user-joined", (id, clients, username) => {
         if (id !== socketId) {
           this.playUserConnectedSound()
+          message.success(`${username} a rejoint la conférence.`);
           // si l'id qui vient d'arriver ne correspond pas à mon socketId (moi) alors je play le sound de cette maniere,
           //seul les utilisateurs déjà présents dans la room entendront le son si un new user arrive dans la room
         }
@@ -492,7 +492,6 @@ class Main extends Component {
           },
         }))
 
-        console.log(`New user joined: ${username} with ID: ${id}`)
 
         clients.forEach((socketListId) => {
           connections[socketListId] = new RTCPeerConnection() //stockage des sockets id dans ma globale "connections"
@@ -521,7 +520,7 @@ class Main extends Component {
               searchVideo.srcObject = event.stream
             } else {
               videoElements = clients.length // videoElements = nbr de client connectés à la  room..
-              console.log("videoElements:", videoElements)
+              console.log("videoElements: ", videoElements)
               let main = document.getElementById("main")
               let cssMesure = this.adaptCSS(main)
 
@@ -591,22 +590,22 @@ class Main extends Component {
     const videoElement = event.target
     if (videoElement.requestFullscreen) {
       videoElement.requestFullscreen()
-    } else if (videoElement.mozRequestFullScreen) {
-      /* Firefox */
+    } else if (videoElement.mozRequestFullScreen) {  //full screen api compatibilité firefopx
+  
       videoElement.mozRequestFullScreen()
-    } else if (videoElement.webkitRequestFullscreen) {
-      /* Chrome, Safari & Opera */
+    } else if (videoElement.webkitRequestFullscreen) { //full screen api compatibilité  chrome et safari (opera aussi je crois)
+    
       videoElement.webkitRequestFullscreen()
-    } else if (videoElement.msRequestFullscreen) {
-      /* IE/Edge */
+    } else if (videoElement.msRequestFullscreen) {//full screen api compatibilité edge
+
       videoElement.msRequestFullscreen()
     }
   }
-  // concernant silence et black -> go check : https://blog.mozilla.org/webrtc/warm-up-with-replacetrack/
+
+  // concernant silence et black -> vas dont check : https://blog.mozilla.org/webrtc/warm-up-with-replacetrack/
   // pourquoi creer un "silence" ? parce qu'en webRTC j'ai besoin de creer un flux silence en CONTINU  
   // le cas où j'utilise "silence" c'est le cas où je clique sur le bouton mute.
   // l'user veut certes qu'on l'entende plus mais le flux audio doit quand meme continuer donc je creer un silence.
-
   silence = () => {
     let ctx = new AudioContext()
     let oscillator = ctx.createOscillator()
@@ -616,7 +615,7 @@ class Main extends Component {
     return Object.assign(dst.stream.getAudioTracks()[0], { enabled: false })
   }
 
-  black = ({ width = 640, height = 480 } = {}) => {
+  black = ({ width = 640, height = 480 } = {}) => { 
     let canvas = Object.assign(document.createElement("canvas"), {
       width,
       height,
