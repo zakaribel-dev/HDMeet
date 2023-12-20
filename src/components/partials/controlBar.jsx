@@ -34,7 +34,7 @@ class ControlBar extends Component {
           {username}
         </Typography>
 
-        <IconButton style={{ color: "#424242" }} onClick={onToggleVideo}>
+        <IconButton style={{ color: "#8EC8F2" }} onClick={onToggleVideo}>
           {isVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
         </IconButton>
 
@@ -42,17 +42,17 @@ class ControlBar extends Component {
           <CallEndIcon />
         </IconButton>
 
-        <IconButton style={{ color: "#424242" }} onClick={onToggleAudio}>
+        <IconButton style={{ color: "#8EC8F2" }} onClick={onToggleAudio}>
           {isAudioEnabled ? <MicIcon /> : <MicOffIcon />}
         </IconButton>
 
         {isScreenSharingAvailable && (
           <IconButton
-            style={{ color: "#424242" }}
+            style={{ color: "#8EC8F2" }}
             onClick={onToggleScreenShare}
-          >
+          > {console.log(ScreenShareIcon)}
             {isScreenSharing ? <ScreenShareIcon /> : <StopScreenShareIcon />}
-          </IconButton>
+          </IconButton> 
         )}
 
         <Badge
@@ -63,7 +63,7 @@ class ControlBar extends Component {
           color="secondary"
           onClick={onOpenChat}
         >
-          <IconButton style={{ color: "#424242" }} onClick={onOpenChat}>
+          <IconButton style={{ color: "#8EC8F2" }} onClick={onOpenChat}>
             <ChatIcon />
           </IconButton>
         </Badge>
@@ -76,6 +76,8 @@ class ControlBar extends Component {
           style={{
             display: isSidebarOpen ? "none" : undefined,
           }}
+          variant="contained"
+
         >
           Utilisateurs connectés
         </Button>

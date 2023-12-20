@@ -14,25 +14,23 @@ import { Row } from "reactstrap"
 import "bootstrap/dist/css/bootstrap.css"
 import "../style/Video.css"
 import Sidebar from "./partials/sideBar"
-import ControlBar from './partials/controlBar'
-
+import ControlBar from "./partials/controlBar"
 
 // attention à faire en sorte qu'il y ait pas de souci avec protocol SSL (ça m'a bien fait chier)
 const server_url =
-  process.env.NODE_ENV === "production"  //je définis NODE_ENV dans un script "server" (go voir package.json)
+  process.env.NODE_ENV === "production" //je définis NODE_ENV dans un script "server" (go voir package.json)
     ? "http://195.35.25.238:4001"
     : "http://localhost:4001"
-
-
 
 // Pourquoi je déclare ces sortes de states global ?
 //Parce qu'à chaque fois qu'un utilisateur join une room, IL VA CREER UNE INSTANCE VIDEO
 // du coup, on veut qu'à chaque instances video
 // l'utilisateur recoive le nouveau "VideoElements", "connections" etc etc qui eux sont mis à jour globalement!
-var connections = {}
-var socket = null
-var socketId = null
-var videoElements = 0
+
+let connections = {}
+let socket = null
+let socketId = null
+let videoElements = 0
 
 class Main extends Component {
   constructor(props) {
@@ -70,22 +68,28 @@ class Main extends Component {
 
   getPermissions = async () => {
     try {
-      const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    
-  // Si la méthode navigator.mediaDevices.getDisplayMedia est appelée jla stocke dans la variable screenAvailable.
-      const screenAvailable = !!navigator.mediaDevices.getDisplayMedia;
-  
-      if (videoStream || audioStream) { // si on a l'aautorisation pour l'audio ou la video de l'user
-        window.localStream = videoStream || audioStream; // je recupere le flux autorisé par l'user dans window.localStream
-        this.myVideo.current.srcObject = window.localStream; // j'affiche ce flux dans mon element video
+      const videoStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+      })
+      const audioStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+      })
+
+      // Si la méthode navigator.mediaDevices.getDisplayMedia est appelée jla stocke dans la variable screenAvailable.
+      const screenAvailable = !!navigator.mediaDevices.getDisplayMedia
+      this.setState({ screenAvailable })
+
+      if (videoStream || audioStream) {
+        // si on a l'aautorisation pour l'audio ou la video de l'user
+        window.localStream = videoStream || audioStream // je recupere le flux autorisé par l'user dans window.localStream
+        this.myVideo.current.srcObject = window.localStream // j'affiche ce flux dans mon element video
       }
-  
-      this.videoAvailable = !!videoStream; // videoAvailable à true si videoStream est true
-      this.audioAvailable = !!audioStream; // meme délire
-      this.screenAvailable = screenAvailable; // meme delire
+
+      this.videoAvailable = !!videoStream // videoAvailable à true si videoStream est true
+      this.audioAvailable = !!audioStream // meme délire
+      this.screenAvailable = screenAvailable // meme delire
     } catch (error) {
-      console.error(error);
+      console.error(error)
     }
   }
 
@@ -144,7 +148,7 @@ class Main extends Component {
       // ici je DOIS créer une offre qui contient un "SDP" (go check https://developer.mozilla.org/fr/docs/Glossary/SDP )
       // et ce sera envoyé aux autres users
       connections[id]
-        .createOffer() 
+        .createOffer()
         .then((description) => connections[id].setLocalDescription(description))
         .then(() => {
           // du coup j'envoie tout ça via une websocket..
@@ -177,9 +181,8 @@ class Main extends Component {
               console.log(e)
             }
 
-  // du coup lorsqu'on désactive la caméra et l'audio, je lance black et silence qui vont creer un flux noir + supprimer l'audio
-            let blackSilence = () =>
-              new MediaStream([this.silence()])
+            // du coup lorsqu'on désactive la caméra et l'audio, je lance black et silence qui vont creer un flux noir + supprimer l'audio
+            let blackSilence = () => new MediaStream([this.silence()])
             window.localStream = blackSilence()
             this.myVideo.current.srcObject = window.localStream
 
@@ -210,7 +213,8 @@ class Main extends Component {
   screenSharePermission = () => {
     if (this.state.screen) {
       //displayMedia c'est le partage donc à ne pas confondre avec usermedia qui est la webcam!
-      if (navigator.mediaDevices.getDisplayMedia) { //verifie si le partage est dispo (si je partage déjà sur gather ou zoom par exemple, ça marchera pas)
+      if (navigator.mediaDevices.getDisplayMedia) {
+        //verifie si le partage est dispo (si je partage déjà sur gather ou zoom par exemple, ça marchera pas)
         navigator.mediaDevices
           .getDisplayMedia({ video: true, audio: true }) // je précise un obj d'options(video+audio activés durant partage)
           .then(this.screenShareGranted) // une fois le flux récupéré j'appelle screenShareGranted pour le partage
@@ -239,7 +243,7 @@ class Main extends Component {
       connections[id].addStream(window.localStream)
 
       connections[id].createOffer().then((description) => {
- // évidamment si je veux partager ça aux autres utilisateurs je dois creer une "offer" qui contiendra mon SDP
+        // évidamment si je veux partager ça aux autres utilisateurs je dois creer une "offer" qui contiendra mon SDP
         connections[id]
           .setLocalDescription(description)
           .then(() => {
@@ -455,13 +459,11 @@ class Main extends Component {
 
       socket.on("userLeft", (id) => {
         let video = document.querySelector(`[data-socket="${id}"]`)
-        let username = this.state.usernames[id] || "Un utilisateur";
+        let username = this.state.usernames[id] || "Un utilisateur"
 
-    
         if (id !== socketId) {
           this.playUserDisconnectedSound()
-          message.info(`${username} a quitté la conférence.`);
-
+          message.info(`${username} a quitté la conférence.`)
         }
 
         if (video !== null) {
@@ -481,17 +483,22 @@ class Main extends Component {
       socket.on("user-joined", (id, clients, username) => {
         if (id !== socketId) {
           this.playUserConnectedSound()
-          message.success(`${username} a rejoint la conférence.`);
+          message.success(`${username} a rejoint la conférence.`)
           // si l'id qui vient d'arriver ne correspond pas à mon socketId (moi) alors je play le sound de cette maniere,
           //seul les utilisateurs déjà présents dans la room entendront le son si un new user arrive dans la room
         }
+        // message.success({ on verra apres consultation du reste dlequipe
+        //   content: `${username} a rejoint la conférence.`,
+        //   className: "custom-message",
+        //   duration: 3,
+        // });
+
         this.setState((prevState) => ({
           usernames: {
             ...prevState.usernames,
             [id]: username,
           },
         }))
-
 
         clients.forEach((socketListId) => {
           connections[socketListId] = new RTCPeerConnection() //stockage des sockets id dans ma globale "connections"
@@ -516,11 +523,11 @@ class Main extends Component {
             )
 
             if (searchVideo !== null) {
-              // si j'fais pas cette condition ça montre un carré vide donc laissez
+              // si j'fais pas cette condition ça montre un carré vide donc laissez please
               searchVideo.srcObject = event.stream
             } else {
               videoElements = clients.length // videoElements = nbr de client connectés à la  room..
-              console.log("videoElements: ", videoElements)
+              console.log("videoElements: ", videoElements) // test adaptCSS
               let main = document.getElementById("main")
               let cssMesure = this.adaptCSS(main)
 
@@ -571,7 +578,8 @@ class Main extends Component {
               .then((description) =>
                 connection.setLocalDescription(description)
               )
-              // localDescription va contnir des infos sur les params de session (codec audio video etc..) obligé d'envoyer ces params pour la communication en webRTC
+              // localDescription va contnir des infos sur les params de session (codec audio video etc..) 
+              //obligé d'envoyer ces params pour la communication en webRTC
               .then(() =>
                 socket.emit(
                   "signal",
@@ -590,20 +598,23 @@ class Main extends Component {
     const videoElement = event.target
     if (videoElement.requestFullscreen) {
       videoElement.requestFullscreen()
-    } else if (videoElement.mozRequestFullScreen) {  //full screen api compatibilité firefopx
-  
-      videoElement.mozRequestFullScreen()
-    } else if (videoElement.webkitRequestFullscreen) { //full screen api compatibilité  chrome et safari (opera aussi je crois)
-    
-      videoElement.webkitRequestFullscreen()
-    } else if (videoElement.msRequestFullscreen) {//full screen api compatibilité edge
+    } else if (videoElement.mozRequestFullScreen) {
+      //full screen api compatibilité firefopx
 
+      videoElement.mozRequestFullScreen()
+    } else if (videoElement.webkitRequestFullscreen) {
+      //full screen api compatibilité  chrome et safari (opera aussi je crois)
+
+      videoElement.webkitRequestFullscreen()
+    } else if (videoElement.msRequestFullscreen) {
+
+      //full screen api compatibilité edge
       videoElement.msRequestFullscreen()
     }
   }
 
   // concernant silence et black -> vas dont check : https://blog.mozilla.org/webrtc/warm-up-with-replacetrack/
-  // pourquoi creer un "silence" ? parce qu'en webRTC j'ai besoin de creer un flux silence en CONTINU  
+  // pourquoi creer un "silence" ? parce qu'en webRTC j'ai besoin de creer un flux silence en CONTINU
   // le cas où j'utilise "silence" c'est le cas où je clique sur le bouton mute.
   // l'user veut certes qu'on l'entende plus mais le flux audio doit quand meme continuer donc je creer un silence.
   silence = () => {
@@ -615,7 +626,7 @@ class Main extends Component {
     return Object.assign(dst.stream.getAudioTracks()[0], { enabled: false })
   }
 
-  black = ({ width = 640, height = 480 } = {}) => { 
+  black = ({ width = 640, height = 480 } = {}) => {
     let canvas = Object.assign(document.createElement("canvas"), {
       width,
       height,
@@ -625,16 +636,18 @@ class Main extends Component {
     return Object.assign(stream.getVideoTracks()[0], { enabled: false })
   }
 
-  handleVideo = () =>
+  // pourquoi !this.state ??? bah parce que ça permute de false à true (clique et reclique) tu comprends mon gars?
+  // un peu comme prevState en composant fonction capiche ?
+  handleVideo = () => 
     this.setState({ video: !this.state.video }, () => this.getUserMedia())
   handleAudio = () =>
     this.setState({ audio: !this.state.audio }, () => this.getUserMedia())
   handleScreen = () =>
-    this.setState({ screen: !this.state.screen }, () =>
+    this.setState({ screen: !this.state.screen }, () => 
       this.screenSharePermission()
     )
 
-  handleEndCall = () => {
+  handleEndCall = () => { // jte fais pas un dessin ta compris..
     try {
       let tracks = this.myVideo.current.srcObject.getTracks()
       tracks.forEach((track) => track.stop())
@@ -688,49 +701,49 @@ class Main extends Component {
   render() {
     return (
       <div>
-      {this.state.askForUsername ? (
-        <div>
-          <div className="askUsername">
-            <form onSubmit={this.handleSubmit}>
-              <Input
-                placeholder="Nom d'utilisateur"
-                onChange={(e) => this.handleUsername(e)}
-                required
-              />
-              <Button
-                className="btnConnect"
-                type="submit"
-                variant="contained"
-                color="primary"
-              >
-                Se connecter
-              </Button>
-            </form>
-          </div>
-    
-          <div
-            style={{
-              justifyContent: "center",
-              textAlign: "center",
-              paddingTop: "40px",
-            }}
-          >
-            <video
-              id="myVideo"
-              ref={this.myVideo}
-              autoPlay
-              muted
+        {this.state.askForUsername ? (
+          <div>
+            <div className="askUsername">
+              <form onSubmit={this.handleSubmit}>
+                <Input
+                  placeholder="Nom d'utilisateur"
+                  onChange={(e) => this.handleUsername(e)}
+                  required
+                />
+                <Button
+                  className="btnConnect"
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                >
+                  Se connecter
+                </Button>
+              </form>
+            </div>
+
+            <div
               style={{
-                objectFit: "fill",
-                width: "30%",
-                height: "30%",
+                justifyContent: "center",
+                textAlign: "center",
+                paddingTop: "40px",
               }}
-              onClick={this.handleVideoClick}
-            ></video>
+            >
+              <video
+                id="myVideo"
+                ref={this.myVideo}
+                autoPlay
+                muted
+                style={{
+                  objectFit: "fill",
+                  width: "30%",
+                  height: "30%",
+                }}
+                onClick={this.handleVideoClick}
+              ></video>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div>
+        ) : (
+          <div>
             {/* BARRE DE CONTROLES !*/}
             <ControlBar
               username={this.state.username}

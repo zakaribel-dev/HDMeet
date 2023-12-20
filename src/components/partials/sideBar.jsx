@@ -11,7 +11,7 @@ class Sidebar extends Component {
 
         return (
             <div className={sidebarClass}>
-                <Button className="toggle-button" onClick={toggleSidebar}>
+                <Button className="toggle-button" onClick={toggleSidebar} variant="contained">
                     {isSidebarOpen ? "Cacher" : "Afficher"}
                 </Button>
                 <div className='smallContainer'>
