@@ -22,11 +22,13 @@ const server_url =
     ? "http://195.35.25.238:4001"
     : "http://localhost:4001"
 
+
+
+
 // Pourquoi je déclare ces sortes de states global ?
 //Parce qu'à chaque fois qu'un utilisateur join une room, IL VA CREER UNE INSTANCE VIDEO
 // du coup, on veut qu'à chaque instances video
 // l'utilisateur recoive le nouveau "VideoElements", "connections" etc etc qui eux sont mis à jour globalement!
-
 let connections = {}
 let socket = null
 let socketId = null
@@ -290,25 +292,27 @@ class Main extends Component {
   }
 
   gotMessageFromServer = (fromId, message) => {
-    var signal = JSON.parse(message)
+    let signal = JSON.parse(message)
 
-    if (fromId !== socketId) {
-      if (signal.sdp) {
+    if (fromId !== socketId) { //jmassure que l'id du client (fromId) est différent du mien (socketId)
+      if (signal.sdp) { // si ya une prop "sdp" dans signal 
         connections[fromId]
-          .setRemoteDescription(new RTCSessionDescription(signal.sdp))
+          .setRemoteDescription(new RTCSessionDescription(signal.sdp)) // alors je controle le sdp 
           .then(() => {
-            if (signal.sdp.type === "offer") {
+// si le type du sdp est "offer" ça veut dire que c'est une offre qui vient d'un autre client !
+            if (signal.sdp.type === "offer") { 
               connections[fromId]
-                .createAnswer()
-                .then((description) => {
-                  connections[fromId]
+                .createAnswer() // du coup je creer une réponse (answer) obligatoirement pour pouvoir accepter l'offer
+                .then((description) => { 
+                  connections[fromId] 
+                 //ensuite je dois aussi creer un sdp pour informer lautre client de ma réponse..
                     .setLocalDescription(description)
-                    .then(() => {
-                      socket.emit(
-                        "signal",
-                        fromId,
+                    .then(() => {// déjà vu ..
+                      socket.emit(// déjà vu ..
+                        "signal",// déjà vu ..
+                        fromId,// déjà vu ..
                         JSON.stringify({
-                          sdp: connections[fromId].localDescription,
+                          sdp: connections[fromId].localDescription, // déjà vu ..
                         })
                       )
                     })
@@ -316,13 +320,25 @@ class Main extends Component {
                 })
                 .catch((e) => console.log(e))
             }
-            if (this.iceCandidatesQueue[fromId]) {
-              this.iceCandidatesQueue[fromId].forEach((candidate) => {
-                connections[fromId].addIceCandidate(
-                  new RTCIceCandidate(candidate)
+
+
+
+    // pour comprendre un peu ICE, jte conseille : https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate
+    // Si tu veux d'un côté t'as les SDP (contiennent des infos type codec video/audio ou tout autre parametres.
+    // Ca décrit COMMENT les médias doivent être échangés entres les peers)
+    //d'un autre côté tu as les iceCandidates qui est un peu dans le même principe mais
+    //fournit plutôt des infos sur la connectivité réseau (ip, routing, ports, protocols..) 
+    //afin de pouvoir choisir le meilleur chemin réseau pour communiquer entres les peers
+    // ICE et l'offre SDP doivent toujours être utilisés ensemble pour pouvoir établir une co webrtc
+            if (this.iceCandidatesQueue[fromId]){
+              this.iceCandidatesQueue[fromId].forEach((candidate) => { // un client envoi son message (fromId)
+                connections[fromId].addIceCandidate( // je recupere ses iceCandidates (car un client peut en avoir plusieuyrs)
+    // en ajoutant les iceCandidates  à ;la classe RTCIceCandidate les peers auront le meilleur path de connexion            
+                new RTCIceCandidate(candidate)  
                 )
               })
-              delete this.iceCandidatesQueue[fromId]
+  // quand tous les candidats ont été ajoutés à la classe RTCIceCandidate, ils sont delete car maintenant y en a plus bsoin
+              delete this.iceCandidatesQueue[fromId] 
             }
           })
           .catch((e) => console.log(e))
