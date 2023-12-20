@@ -178,7 +178,7 @@ class Main extends Component {
               console.log(e)
             }
 
-            // Crée un nouveau flux local avec vidéo "noir" et audio "silence".
+  // du coup lorsqu'on désactive la caméra et l'audio, je lance black et silence qui vont creer un flux noir + supprimer l'audio
             let blackSilence = () =>
               new MediaStream([this.black(), this.silence()])
             window.localStream = blackSilence()
@@ -456,9 +456,13 @@ class Main extends Component {
 
       socket.on("userLeft", (id) => {
         let video = document.querySelector(`[data-socket="${id}"]`)
+        let username = this.state.usernames[id] || "Un utilisateur";
 
+    
         if (id !== socketId) {
           this.playUserDisconnectedSound()
+          message.info(`${username} a quitté la conférence.`);
+
         }
 
         if (video !== null) {
@@ -598,7 +602,11 @@ class Main extends Component {
       videoElement.msRequestFullscreen()
     }
   }
-  // concernant silence et black -> tu peux check : https://blog.mozilla.org/webrtc/warm-up-with-replacetrack/
+  // concernant silence et black -> go check : https://blog.mozilla.org/webrtc/warm-up-with-replacetrack/
+  // pourquoi creer un "silence" ? parce qu'en webRTC j'ai besoin de creer un flux silence en CONTINU  
+  // le cas où j'utilise "silence" c'est le cas où je clique sur le bouton mute.
+  // l'user veut certes qu'on l'entende plus mais le flux audio doit quand meme continuer donc je creer un silence.
+
   silence = () => {
     let ctx = new AudioContext()
     let oscillator = ctx.createOscillator()
@@ -607,6 +615,7 @@ class Main extends Component {
     ctx.resume()
     return Object.assign(dst.stream.getAudioTracks()[0], { enabled: false })
   }
+
   black = ({ width = 640, height = 480 } = {}) => {
     let canvas = Object.assign(document.createElement("canvas"), {
       width,
