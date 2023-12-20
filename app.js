@@ -32,9 +32,9 @@ let roomUsers = {};
 
 io.on('connection', (socket) => {
 
-    socket.on('join-call', (path, username) => {
+    socket.on('joinCall', (path, username) => {
         socket.username = username;
-		console.log(`User joined: ${username} with ID: ${socket.id} in room: ${path}`);
+		console.log(` ${username} a rejoin avec l'ID: ${socket.id} dans la room : ${path}`);
 		io.to(socket.id).emit('update-user-list', roomUsers[path]);
 
         if (connections[path] === undefined) {
@@ -50,7 +50,7 @@ io.on('connection', (socket) => {
         roomUsers[path].push({ id: socket.id, username });
 
         // Retarder légèrement l'envoi de la liste des utilisateurs
-		console.log('Sending updated user list:', roomUsers[path]);
+		console.log('envoi de la liste des users MAJ', roomUsers[path]);
 		io.to(path).emit('update-user-list', roomUsers[path]);
         for (let a = 0; a < connections[path].length; ++a) {
             io.to(connections[path][a]).emit("user-joined", socket.id, connections[path], username);
@@ -95,11 +95,11 @@ io.on('connection', (socket) => {
 				connections[key].splice(index, 1);
 
 				connections[key].forEach((recipient) => {
-					io.to(recipient).emit("user-left", socket.id);
+					io.to(recipient).emit("userLeft", socket.id);
 				});
 
-				console.log(`User left: ${socket.username} with ID: ${socket.id}`);
-				console.log('Updated user list after disconnect:', roomUsers[path]);
+				console.log(`User vient de quitter : ${socket.username} avec ID: ${socket.id}`);
+				console.log('liste MAJ suite à deco du ou des users:', roomUsers[path]);
 				if (connections[key].length === 0) {
 					delete connections[key];
 				}

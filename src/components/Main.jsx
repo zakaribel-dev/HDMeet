@@ -1,17 +1,8 @@
 /* eslint-disable no-loop-func */
 import React, { Component } from "react"
 import io from "socket.io-client"
-import { IconButton, Badge, Input, Button } from "@material-ui/core"
-import VideocamIcon from "@material-ui/icons/Videocam"
-import VideocamOffIcon from "@material-ui/icons/VideocamOff"
-import MicIcon from "@material-ui/icons/Mic"
-import MicOffIcon from "@material-ui/icons/MicOff"
-import ScreenShareIcon from "@material-ui/icons/ScreenShare"
-import StopScreenShareIcon from "@material-ui/icons/StopScreenShare"
-import CallEndIcon from "@material-ui/icons/CallEnd"
-import ChatIcon from "@material-ui/icons/Chat"
+import { Input, Button } from "@material-ui/core"
 import logo from "../assets/hdmlogo.png"
-import Typography from "@material-ui/core/Typography"
 import userConnectedSound from "../assets/user_connected.mp3"
 import userDisconnectedSound from "../assets/disconnected.mp3"
 import messageSound from "../assets/message_sound.mp3"
@@ -22,13 +13,17 @@ import "antd/dist/antd.css"
 import { Row } from "reactstrap"
 import "bootstrap/dist/css/bootstrap.css"
 import "../style/Video.css"
+import Sidebar from "./partials/sideBar"
+import ControlBar from './partials/controlBar'
 
 
 // attention à faire en sorte qu'il y ait pas de souci avec protocol SSL (ça m'a bien fait chier)
 const server_url =
-  process.env.NODE_ENV === "production"
-    ? "http://195.35.25.238:4001" 
-    : "http://localhost:4001";
+  process.env.NODE_ENV === "production"  // je définis NODE_ENV dans un script "server" (go voir package.json)
+    ? "http://195.35.25.238:4001"
+    : "http://localhost:4001"
+
+
 
 
 // Pourquoi je déclare ces sortes de states global ?
@@ -68,28 +63,6 @@ class Main extends Component {
     this.getPermissions()
   }
 
-  renderSidebar() {
-    const usernames = Object.values(this.state.usernames)
-    const sidebarClass = this.state.isSidebarOpen ? "sidebar open" : "sidebar"
-
-    return (
-      <div className={sidebarClass}>
-        <Button className="toggle-button" onClick={this.toggleSidebar}>
-          {this.state.isSidebarOpen ? "Cacher" : "Afficher"}
-        </Button>
-        <h3>Utilisateurs Connectés</h3>
-        <ul>
-          {usernames.map((username, index) => (
-            <li key={index}>
-              <span className="online-indicator"></span>
-              {username}
-            </li>
-          ))}
-        </ul>
-      </div>
-    )
-  }
-
   toggleSidebar = () => {
     this.setState((prevState) => ({
       isSidebarOpen: !prevState.isSidebarOpen,
@@ -98,37 +71,22 @@ class Main extends Component {
 
   getPermissions = async () => {
     try {
-      await navigator.mediaDevices
-        .getUserMedia({ video: true })
-        .then(() => (this.videoAvailable = true))
-        .catch(() => (this.videoAvailable = false))
-
-      await navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then(() => (this.audioAvailable = true))
-        .catch(() => (this.audioAvailable = false))
-
-      if (navigator.mediaDevices.getDisplayMedia) {
-        this.setState({ screenAvailable: true })
-      } else {
-        this.setState({ screenAvailable: false })
+      const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    
+  // Si la méthode navigator.mediaDevices.getDisplayMedia est appelée jla stocke dans la variable screenAvailable.
+      const screenAvailable = !!navigator.mediaDevices.getDisplayMedia;
+  
+      if (videoStream || audioStream) { // si on a l'aautorisation pour l'audio ou la video de l'user
+        window.localStream = videoStream || audioStream; // je recupere le flux autorisé par l'user dans window.localStream
+        this.myVideo.current.srcObject = window.localStream; // j'affiche ce flux dans mon element video
       }
-
-      if (this.videoAvailable || this.audioAvailable) {
-        navigator.mediaDevices
-          .getUserMedia({
-            video: this.videoAvailable,
-            audio: this.audioAvailable,
-          })
-          .then((stream) => {
-            window.localStream = stream
-            this.myVideo.current.srcObject = stream
-          })
-          .then((stream) => {})
-          .catch((e) => console.log(e))
-      }
-    } catch (e) {
-      console.log(e)
+  
+      this.videoAvailable = !!videoStream; // videoAvailable à true si videoStream est true
+      this.audioAvailable = !!audioStream; // meme délire
+      this.screenAvailable = screenAvailable; // meme delire
+    } catch (error) {
+      console.error(error);
     }
   }
 
@@ -150,27 +108,29 @@ class Main extends Component {
       (this.state.video && this.videoAvailable) ||
       (this.state.audio && this.audioAvailable)
     ) {
-      navigator.mediaDevices 
-  // en param je mets ce que je veux récuperer (l'utilisateur va recevoir une demande pour acceder à son micro + caméra)
-        .getUserMedia({ video: this.state.video, audio: this.state.audio }) 
-          // ce machin va mretourner un obj "MediaStream" qui est simplement le flux que j'ai récupéré
-        .then(this.getUserMediaSuccess)//si c'est good j'apelle getUserMediaSuccess qui recuperera le MediaStream en param
+      navigator.mediaDevices
+        // en param je mets ce que je veux récuperer (l'utilisateur va recevoir une demande pour acceder à son micro + caméra)
+        .getUserMedia({ video: this.state.video, audio: this.state.audio })
+        // ce machin va mretourner un obj "MediaStream" qui est simplement le flux que j'ai récupéré
+        .then(this.getUserMediaSuccess) //si c'est good j'apelle getUserMediaSuccess qui recuperera le MediaStream en param
         .then((stream) => {})
         .catch((e) => console.log(e))
     } else {
       try {
-//si l'utilisateur n'accepte pas l'acces à sa cam + audio parce qu'il est grave timide alors on capture pas son stream
-        let tracks = this.myVideo.current.srcObject.getTracks() 
+        //si l'utilisateur n'accepte pas l'acces à sa cam + audio parce qu'il est grave timide alors on capture pas son stream
+        let tracks = this.myVideo.current.srcObject.getTracks()
         tracks.forEach((track) => track.stop())
-      } catch (e) {  console.log(e) }
+      } catch (e) {
+        console.log(e)
+      }
     }
   }
 
   getUserMediaSuccess = (stream) => {
-// "stream" contient mon objet MediaStream qui m'est retourné quand l'user a accepté qu'on ait acces à sa cam + micro..
-//(voir plus haut dans getUserMedia)
+    // "stream" contient mon objet MediaStream qui m'est retourné quand l'user a accepté qu'on ait acces à sa cam + micro..
+    //(voir plus haut dans getUserMedia)
 
-// Met à jour le flux local avec le nouveau flux de la caméra/microphone.
+    // Met à jour le flux local avec le nouveau flux de la caméra/microphone.
     window.localStream = stream
     this.myVideo.current.srcObject = stream
 
@@ -179,10 +139,10 @@ class Main extends Component {
       if (id === socketId) continue // la jdis que si dans la liste des sockets ya une id qui correspond à MA socketId(moi)
       //alors je saute l'itération, jlui dis de pas calculer et de continuer son petit bonhomme de chemin
 
-      //je stream la ganache du streamer à tous les users dans la room en ajoutant le flux actuel à toute les connexions webRTC
-      connections[id].addStream(window.localStream) 
+      //je stream la petite bouille du streamer à tous les users dans la room en ajoutant le flux actuel à toute les connexions webRTC
+      connections[id].addStream(window.localStream)
 
-      // ici je DOIS créer une offre qui contient une "SDP" (go check https://developer.mozilla.org/fr/docs/Glossary/SDP )
+      // ici je DOIS créer une offre qui contient un "SDP" (go check https://developer.mozilla.org/fr/docs/Glossary/SDP )
       // et ce sera envoyé aux autres users
       connections[id]
         .createOffer()
@@ -190,7 +150,7 @@ class Main extends Component {
         .then(() => {
           // du coup j'envoie tout ça via une websocket..
           // mon emission "signal" contiendra mon offer pour que tous les autres users puisse la receptionner
-          // createOffer qui va creer une SDP est un processus OBLIGATOIRE pour établir une connexion WebRTC 
+          // createOffer qui va creer une SDP est un processus OBLIGATOIRE pour établir une connexion WebRTC
           // c'est comme si t'allais à la banque pour ouvrir un compte et tu signes aucun papiers..
           socket.emit(
             "signal",
@@ -201,7 +161,6 @@ class Main extends Component {
         .catch((e) => console.log(e))
     }
 
-    // Configure un gestionnaire d'événements pour les pistes du flux actuel.
     stream.getTracks().forEach((track) => {
       track.onended = () => {
         // Lorsque l'une des pistes se termine (comme la vidéo ou l'audio), cette fonction anonyme est exécutée.
@@ -264,15 +223,15 @@ class Main extends Component {
   screenShareGranted = (stream) => {
     try {
       //j'arrete de diffuser le stream de l'user qui souhaite partager son écran
-      window.localStream.getTracks().forEach((track) => track.stop()) 
+      window.localStream.getTracks().forEach((track) => track.stop())
     } catch (e) {
       console.log(e)
     }
 
     // jattribue le stream de mon partage à une variable globale "window.localStream = stream "
-    //Ca me fait uen reference locale qui fait que je peux la modifier si je veux gerer la transition 
+    //Ca me fait uen reference locale qui fait que je peux la modifier si je veux gerer la transition
     //entre webcam et partage par exemple ou genre désactiver la cam dans d'autres circonstances
-    window.localStream = stream 
+    window.localStream = stream
     this.myVideo.current.srcObject = stream // je veux diffuser mon stream dans mon element html "video"
 
     for (let id in connections) {
@@ -281,7 +240,7 @@ class Main extends Component {
       connections[id].addStream(window.localStream)
 
       connections[id].createOffer().then((description) => {
-    // évidamment si je veux partager ça aux autres utilisateurs je dois creer une "offer" qui contiendra mon SDP
+        // évidamment si je veux partager ça aux autres utilisateurs je dois creer une "offer" qui contiendra mon SDP
         connections[id]
           .setLocalDescription(description)
           .then(() => {
@@ -475,7 +434,7 @@ class Main extends Component {
     socket.on("signal", this.gotMessageFromServer)
 
     socket.on("connect", () => {
-      socket.emit("join-call", window.location.href, this.state.username)
+      socket.emit("joinCall", window.location.href, this.state.username)
       socketId = socket.id
 
       socket.on("update-user-list", (users) => {
@@ -495,7 +454,7 @@ class Main extends Component {
 
       socket.on("chat-message", this.addMessage)
 
-      socket.on("user-left", (id) => {
+      socket.on("userLeft", (id) => {
         let video = document.querySelector(`[data-socket="${id}"]`)
 
         if (id !== socketId) {
@@ -721,130 +680,65 @@ class Main extends Component {
   render() {
     return (
       <div>
-        {this.state.isLoadingMedia ? ( // Conditional rendering based on isLoadingMedia
-          <div className="loading-spinner">Loading Video...</div>
-        ) : this.state.askForUsername === true ? (
-          <div>
-            <div className="askUsername">
-              <form onSubmit={this.handleSubmit}>
-                <Input
-                  placeholder="Nom d'utilisateur"
-                  onChange={(e) => this.handleUsername(e)}
-                  required
-                />
-                <Button
-                  className="btnConnect"
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                >
-                  Se connecter
-                </Button>
-              </form>
-            </div>
-
-            <div
-              style={{
-                justifyContent: "center",
-                textAlign: "center",
-                paddingTop: "40px",
-              }}
-            >
-              <video
-                id="myVideo"
-                ref={this.myVideo}
-                autoPlay
-                muted
-                style={{
-                  objectFit: "fill",
-                  width: "30%",
-                  height: "30%",
-                }}
-                onClick={this.handleVideoClick}
-              ></video>
-            </div>
-          </div>
-        ) : (
-          <div>
-            {/* BARRE DE CONTROLES !*/}
-            <div
-              className="btn-down"
-              
-            >
-              <Typography variant="body1">
-                <span className="online-indicator"></span>
-
-                {this.state.username}
-              </Typography>
-
-              <IconButton
-                style={{ color: "#424242" }}
-                onClick={this.handleVideo}
-              >
-                {this.state.video === true ? (
-                  <VideocamIcon />
-                ) : (
-                  <VideocamOffIcon />
-                )}
-              </IconButton>
-
-              <IconButton
-                style={{ color: "#f44336" }}
-                onClick={this.handleEndCall}
-              >
-                <CallEndIcon />
-              </IconButton>
-
-              <IconButton
-                style={{ color: "#424242" }}
-                onClick={this.handleAudio}
-              >
-                {this.state.audio === true ? <MicIcon /> : <MicOffIcon />}
-              </IconButton>
-
-              {this.state.screenAvailable === true ? (
-                <IconButton
-                  style={{ color: "#424242" }}
-                  onClick={this.handleScreen}
-                >
-                  {this.state.screen === true ? (
-                    <ScreenShareIcon />
-                  ) : (
-                    <StopScreenShareIcon />
-                  )}
-                </IconButton>
-              ) : null}
-
-              {/* openChat va passer à true showModal */}
-              <Badge
-                className="custom-badge"
-                overlap="rectangular"
-                badgeContent={this.state.newmessages}
-                max={999}
-                color="secondary"
-                onClick={this.openChat}
-              >
-                <IconButton
-                  style={{ color: "#424242" }}
-                  onClick={this.openChat}
-                >
-                  <ChatIcon />
-                </IconButton>
-              </Badge>
-
+      {this.state.askForUsername ? (
+        <div>
+          <div className="askUsername">
+            <form onSubmit={this.handleSubmit}>
+              <Input
+                placeholder="Nom d'utilisateur"
+                onChange={(e) => this.handleUsername(e)}
+                required
+              />
               <Button
-                className={`toggle-button ${
-                  !this.state.isSidebarOpen ? "button-show" : ""
-                }`}
-                onClick={this.toggleSidebar}
-                style={{
-                  display: this.state.isSidebarOpen ? "none" : undefined,
-                }}
+                className="btnConnect"
+                type="submit"
+                variant="contained"
+                color="primary"
               >
-                Utilisateurs connectés
+                Se connecter
               </Button>
-            </div>
-
+            </form>
+          </div>
+    
+          <div
+            style={{
+              justifyContent: "center",
+              textAlign: "center",
+              paddingTop: "40px",
+            }}
+          >
+            <video
+              id="myVideo"
+              ref={this.myVideo}
+              autoPlay
+              muted
+              style={{
+                objectFit: "fill",
+                width: "30%",
+                height: "30%",
+              }}
+              onClick={this.handleVideoClick}
+            ></video>
+          </div>
+        </div>
+      ) : (
+        <div>
+            {/* BARRE DE CONTROLES !*/}
+            <ControlBar
+              username={this.state.username}
+              isVideoEnabled={this.state.video}
+              isAudioEnabled={this.state.audio}
+              isScreenSharing={this.state.screen}
+              isScreenSharingAvailable={this.state.screenAvailable}
+              isSidebarOpen={this.state.isSidebarOpen}
+              newMessagesCount={this.state.newmessages}
+              onToggleVideo={this.handleVideo}
+              onToggleAudio={this.handleAudio}
+              onToggleScreenShare={this.handleScreen}
+              onEndCall={this.handleEndCall}
+              onOpenChat={this.openChat}
+              toggleSidebar={this.toggleSidebar}
+            />
             {/* je "hide" la modal si showModal est faux( c le cas par défaut of course*/}
             <Rodal visible={this.state.showModal} onClose={this.closeChat}>
               <header>
@@ -938,7 +832,13 @@ class Main extends Component {
                 ></video>
               </Row>
 
-              <div className="video-chat-container">{this.renderSidebar()}</div>
+              <div className="video-chat-container">
+                <Sidebar
+                  usernames={this.state.usernames}
+                  isSidebarOpen={this.state.isSidebarOpen}
+                  toggleSidebar={this.toggleSidebar}
+                />
+              </div>
             </div>
           </div>
         )}
