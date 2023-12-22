@@ -22,9 +22,6 @@ const server_url =
     ? "http://195.35.25.238:4001"
     : "http://localhost:4001"
 
-
-
-
 // Pourquoi je déclare ces sortes de states global ?
 //Parce qu'à chaque fois qu'un utilisateur join une room, IL VA CREER UNE INSTANCE VIDEO
 // du coup, on veut qu'à chaque instances video
@@ -56,6 +53,8 @@ class Main extends Component {
       usernames: {},
       isSidebarOpen: false,
       playUserConnectedSound: false,
+      requestingSpeech: false,
+      speechRequestMessage: "",
     }
     connections = {}
 
@@ -77,10 +76,10 @@ class Main extends Component {
         audio: true,
       })
 
-     // en faisant "!!navigator.mediaDevices.getDisplayMedia" je vérifie si la methode getDisplayMedia est dispo dans le navigateur
-     // si c'est le cas ça veut dire que le navigateur supporte le partage d'écran
-     // donc ça me retrourne true et donc je met à jour ma state
-     // (state qui va déterminer si j'affiche le bouton de partage ou non)
+      // en faisant "!!navigator.mediaDevices.getDisplayMedia" je vérifie si la methode getDisplayMedia est dispo dans le navigateur
+      // si c'est le cas ça veut dire que le navigateur supporte le partage d'écran
+      // donc ça me retrourne true et donc je met à jour ma state
+      // (state qui va déterminer si j'affiche le bouton de partage ou non)
       const screenAvailable = !!navigator.mediaDevices.getDisplayMedia
       this.setState({ screenAvailable })
 
@@ -134,7 +133,7 @@ class Main extends Component {
     }
   }
 
-// CREATE OFFER POUR LE PARTAGE
+  // CREATE OFFER POUR LE PARTAGE
   getUserMediaSuccess = (stream) => {
     // "stream" contient mon objet MediaStream qui m'est retourné quand l'user a accepté qu'on ait acces à sa cam + micro..
     //(voir plus haut dans getUserMedia)
@@ -199,7 +198,7 @@ class Main extends Component {
               connections[id]
                 .createOffer()
                 .then((description) =>
-                  connections[id].setLocalDescription(description) 
+                  connections[id].setLocalDescription(description)
                 )
                 .then(() => {
                   socket.emit(
@@ -249,8 +248,8 @@ class Main extends Component {
 
       connections[id].addStream(window.localStream)
 
-      connections[id].createOffer().then((description) => { 
-        // évidamment je partage un flux (partage d'écran cette fois ci) aux autres utilisateurs 
+      connections[id].createOffer().then((description) => {
+        // évidamment je partage un flux (partage d'écran cette fois ci) aux autres utilisateurs
         //je dois creer une "offer" qui contiendra mon SDP
 
         connections[id]
@@ -299,31 +298,33 @@ class Main extends Component {
     )
   }
 
-
-
   // ici je vais réceptionner tout ce qui est SDP/iceCandidates
   signalFromServer = (fromId, body) => {
     let signal = JSON.parse(body)
 
-    if (fromId !== socketId) { //jmassure que l'id du client (fromId) est différent du mien (socketId)
-      if (signal.sdp) { // si ya une prop "sdp" dans signal  (prop generé lors du createOffer)
+    if (fromId !== socketId) {
+      //jmassure que l'id du client (fromId) est différent du mien (socketId)
+      if (signal.sdp) {
+        // si ya une prop "sdp" dans signal  (prop generé lors du createOffer)
         connections[fromId]
-          .setRemoteDescription(new RTCSessionDescription(signal.sdp))// alors je controle le sdp de l'autre peer
+          .setRemoteDescription(new RTCSessionDescription(signal.sdp)) // alors je controle le sdp de l'autre peer
           .then(() => {
-// si le type du sdp est "offer" ça veut dire que c'est une offre qui vient d'un autre client btw
-            if (signal.sdp.type === "offer") { 
+            // si le type du sdp est "offer" ça veut dire que c'est une offre qui vient d'un autre client btw
+            if (signal.sdp.type === "offer") {
               connections[fromId]
-                .createAnswer() // du coup je creer une réponse (answer) à l'offer que j'ai reçu, 
-                //c'est obligatoire 
-                .then((description) => { 
-                  connections[fromId] 
-    // une fois arrivé à l'appel de setLocalDescription(),
-    // webRTC va commencer le processus de collecte des IceCandidates (fourni par navigateurs)
-    .setLocalDescription(description)
-                    .then(() => {// déjà vu ..
-                      socket.emit(// déjà vu ..
-                        "signal",// déjà vu ..
-                        fromId,// déjà vu ..
+                .createAnswer() // du coup je creer une réponse (answer) à l'offer que j'ai reçu,
+                //c'est obligatoire
+                .then((description) => {
+                  connections[fromId]
+                    // une fois arrivé à l'appel de setLocalDescription(),
+                    // webRTC va commencer le processus de collecte des IceCandidates (fourni par navigateurs)
+                    .setLocalDescription(description)
+                    .then(() => {
+                      // déjà vu ..
+                      socket.emit(
+                        // déjà vu ..
+                        "signal", // déjà vu ..
+                        fromId, // déjà vu ..
                         JSON.stringify({
                           sdp: connections[fromId].localDescription, // déjà vu ..
                         })
@@ -334,43 +335,46 @@ class Main extends Component {
                 .catch((e) => console.log(e))
             }
 
-
-    // pour comprendre un peu ICE(Interactive Connectivity Establishment), 
-    //jte conseille : https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate ou alors chatGPT of course
-    // Si tu veux d'un côté t'as les SDP (contiennent des infos type codec video/audio ou tout autre parametres.
-    // Ca décrit COMMENT les médias doivent être échangés entres les peers)
-    //d'un autre côté tu as les iceCandidates qui est un peu dans le même principe mais
-    //fournit plutôt des infos sur la connectivité réseau (ip, routing, ports, protocols..) 
-    //afin de pouvoir choisir le meilleur chemin réseau pour communiquer entres les peers
-    // ICE et l'offre SDP doivent toujours être utilisés ensemble pour pouvoir établir une co webrtc
-            if (this.iceCandidatesQueue[fromId]){
-              this.iceCandidatesQueue[fromId].forEach((candidate) => { // un client envoi son message (fromId)
-                connections[fromId].addIceCandidate( // j'ajoute mes iceCandidates à ma connection p2p           
-                new RTCIceCandidate(candidate)  
+            // pour comprendre un peu ICE(Interactive Connectivity Establishment),
+            //jte conseille : https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate ou alors chatGPT of course
+            // Si tu veux d'un côté t'as les SDP (contiennent des infos type codec video/audio ou tout autre parametres.
+            // Ca décrit COMMENT les médias doivent être échangés entres les peers)
+            //d'un autre côté tu as les iceCandidates qui est un peu dans le même principe mais
+            //fournit plutôt des infos sur la connectivité réseau (ip, routing, ports, protocols..)
+            //afin de pouvoir choisir le meilleur chemin réseau pour communiquer entres les peers
+            // ICE et l'offre SDP doivent toujours être utilisés ensemble pour pouvoir établir une co webrtc
+            if (this.iceCandidatesQueue[fromId]) {
+              this.iceCandidatesQueue[fromId].forEach((candidate) => {
+                // un client envoi son message (fromId)
+                connections[fromId].addIceCandidate(
+                  // j'ajoute mes iceCandidates à ma connection p2p
+                  new RTCIceCandidate(candidate)
                 )
               })
-  // quand tous les candidats ont été ajoutés à la classe RTCIceCandidate, ils sont delete car y en a plus bseoin
-              delete this.iceCandidatesQueue[fromId] 
+              // quand tous les candidats ont été ajoutés à la classe RTCIceCandidate, ils sont delete car y en a plus bseoin
+              delete this.iceCandidatesQueue[fromId]
             }
           })
           .catch((e) => console.log(e))
       }
-      
-  // du coup logiquement après un createOffer ou createAnswer tu as des iceCandidates 
-// ça veut dire qu'un peer a trouvé un bon chemin de connexion réseau et il l'envoie pour qu'un autre peer puisse l'essayer
-      if (signal.ice) {  
-        let iceCandidate = new RTCIceCandidate(signal.ice)// du coup je creer mon obj RTCIceCandidate à partir du ice reçu
-        if (connections[fromId].remoteDescription) { // si setRemoteDescription s'est déroule comme i faut
+
+      // du coup logiquement après un createOffer ou createAnswer tu as des iceCandidates
+      // ça veut dire qu'un peer a trouvé un bon chemin de connexion réseau et il l'envoie pour qu'un autre peer puisse l'essayer
+      if (signal.ice) {
+        let iceCandidate = new RTCIceCandidate(signal.ice) // du coup je creer mon obj RTCIceCandidate à partir du ice reçu
+        if (connections[fromId].remoteDescription) {
+          // si setRemoteDescription s'est déroule comme i faut
           connections[fromId]
             .addIceCandidate(iceCandidate) // j'ajoute ENFIN l'icecandidate
             .catch((e) => console.log(e))
         } else {
-          if (!this.iceCandidatesQueue[fromId]) { // Si pas de remoteDescription, 
+          if (!this.iceCandidatesQueue[fromId]) {
+            // Si pas de remoteDescription,
             //alors je stock les iceCandidates en attendant la remoteDescription
-            this.iceCandidatesQueue[fromId] = [] 
+            this.iceCandidatesQueue[fromId] = []
           }
-        // du coup en attendant je met les iceCandidate dans une file d'attente
-          this.iceCandidatesQueue[fromId].push(iceCandidate) 
+          // du coup en attendant je met les iceCandidate dans une file d'attente
+          this.iceCandidatesQueue[fromId].push(iceCandidate)
         }
       }
     }
@@ -464,8 +468,19 @@ class Main extends Component {
     audio.play()
   }
 
+  handleRequestSpeech = () => {
+    const { username } = this.state
+    socket.emit("speechEvent", { username })
+    message.warning('Demande de prise de parole en cours..')
+  }
+
   connectToSocketServer = () => {
     socket = io.connect(server_url, { secure: true })
+
+    // demande de parole
+    socket.on('speech-requested', ({ username }) => {
+      message.warning(`${username} souhaite prendre la parole.`);
+    });
 
     socket.on("signal", this.signalFromServer)
 
@@ -516,15 +531,15 @@ class Main extends Component {
       socket.on("user-joined", (id, clients, username) => {
         if (id !== socketId) {
           this.playUserConnectedSound()
-          message.success(`${username} a rejoint la conférence.`)
+          message.success({
+            content: `${username} a rejoint la conférence.`,
+            className: "custom-message",
+            duration: 3,
+          })
           // si l'id qui vient d'arriver ne correspond pas à mon socketId (moi) alors je play le sound de cette maniere,
           //seul les utilisateurs déjà présents dans la room entendront le son si un new user arrive dans la room
         }
-        // message.success({ on verra apres consultation du reste dlequipe
-        //   content: `${username} a rejoint la conférence.`,
-        //   className: "custom-message",
-        //   duration: 3,
-        // });
+
 
         this.setState((prevState) => ({
           usernames: {
@@ -550,13 +565,11 @@ class Main extends Component {
 
           // je check si un nouveau user (nouveau videoElement du coup) arrive dans la room
           connections[socketListId].onaddstream = (event) => {
-    // c un event de webRTC go voir : https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addstream_event
+            // c un event de webRTC go voir : https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addstream_event
 
             let searchVideo = document.querySelector(
               `[data-socket="${socketListId}"]`
             )
-          
-        
 
             if (searchVideo !== null) {
               // si j'fais pas cette condition ça montre un carré vide donc laissez please
@@ -583,7 +596,7 @@ class Main extends Component {
               video.style.setProperty("width", cssMesure.width)
               video.style.setProperty("height", cssMesure.height)
               video.setAttribute("data-socket", socketListId)
-              video.style.borderRadius ="25px"
+              video.style.borderRadius = "25px"
               video.srcObject = event.stream
               video.autoplay = true
               video.playsinline = true
@@ -609,13 +622,13 @@ class Main extends Component {
               connection.addStream(window.localStream)
             } catch (e) {}
 
-  // createOffer stream audio/video (pas le partage d'ecran!)
+            // createOffer stream audio/video (pas le partage d'ecran!)
             connection
               .createOffer()
               .then((description) =>
                 connection.setLocalDescription(description)
               )
-              // localDescription va contnir des infos (sdp) sur les params de session (codec audio video etc..) 
+              // localDescription va contnir des infos (sdp) sur les params de session (codec audio video etc..)
               //obligé d'envoyer ces params pour la communication en webRTC
               .then(() =>
                 socket.emit(
@@ -644,7 +657,6 @@ class Main extends Component {
 
       videoElement.webkitRequestFullscreen()
     } else if (videoElement.msRequestFullscreen) {
-
       //full screen api compatibilité edge
       videoElement.msRequestFullscreen()
     }
@@ -675,16 +687,17 @@ class Main extends Component {
 
   // pourquoi !this.state ??? bah parce que ça permute de false à true (clique et reclique) tu comprends mon gars?
   // un peu comme prevState en composant fonction capiche ?
-  handleVideo = () => 
+  handleVideo = () =>
     this.setState({ video: !this.state.video }, () => this.getUserMedia())
   handleAudio = () =>
     this.setState({ audio: !this.state.audio }, () => this.getUserMedia())
   handleScreen = () =>
-    this.setState({ screen: !this.state.screen }, () => 
+    this.setState({ screen: !this.state.screen }, () =>
       this.screenSharePermission()
     )
 
-  handleEndCall = () => { // jte fais pas un dessin ta compris..
+  handleEndCall = () => {
+    // jte fais pas un dessin ta compris..
     try {
       let tracks = this.myVideo.current.srcObject.getTracks()
       tracks.forEach((track) => track.stop())
@@ -768,11 +781,10 @@ class Main extends Component {
                   objectFit: "fill",
                   width: "100",
                   height: "30%",
-                  borderRadius:"25px"
+                  borderRadius: "25px",
                 }}
-                onClick={this.handleVideoClick}>
-
-                </video>
+                onClick={this.handleVideoClick}
+              ></video>
             </div>
           </div>
         ) : (
@@ -792,6 +804,7 @@ class Main extends Component {
               onEndCall={this.handleEndCall}
               onOpenChat={this.openChat}
               toggleSidebar={this.toggleSidebar}
+              onRequestSpeech={this.handleRequestSpeech}
             />
             {/* je "hide" la modal si showModal est faux( c le cas par défaut of course*/}
             <Rodal visible={this.state.showModal} onClose={this.closeChat}>
@@ -881,7 +894,7 @@ class Main extends Component {
                     objectFit: "fill",
                     width: "550px",
                     height: "500px",
-                    borderRadius:"25px"
+                    borderRadius: "25px",
                   }}
                   onClick={this.handleVideoClick}
                 ></video>

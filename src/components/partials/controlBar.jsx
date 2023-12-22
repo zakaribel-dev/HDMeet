@@ -8,10 +8,12 @@ import ScreenShareIcon from "@material-ui/icons/ScreenShare";
 import StopScreenShareIcon from "@material-ui/icons/StopScreenShare";
 import CallEndIcon from "@material-ui/icons/CallEnd";
 import ChatIcon from "@material-ui/icons/Chat";
+import PanToolIcon from '@material-ui/icons/PanTool';
+
 
 class ControlBar extends Component {
   render() {
-    const {
+    const {  // mes states
       username,
       isVideoEnabled,
       isAudioEnabled,
@@ -24,7 +26,7 @@ class ControlBar extends Component {
       onEndCall,
       onOpenChat,
       isSidebarOpen,
-      toggleSidebar
+      toggleSidebar,
     } = this.props;
 
     return (
@@ -81,6 +83,9 @@ class ControlBar extends Component {
         >
           Utilisateurs connectés
         </Button>
+
+        <IconButton  onClick={this.props.onRequestSpeech}><PanToolIcon/></IconButton>
+
       </div>
     );
   }
