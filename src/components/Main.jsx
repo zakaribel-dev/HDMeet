@@ -597,6 +597,7 @@ class Main extends Component {
               video.style.setProperty("height", cssMesure.height)
               video.setAttribute("data-socket", socketListId)
               video.style.borderRadius = "25px"
+              video.style.backgroundColor= "black"
               video.srcObject = event.stream
               video.autoplay = true
               video.playsinline = true
@@ -782,6 +783,7 @@ class Main extends Component {
                   width: "100",
                   height: "30%",
                   borderRadius: "25px",
+  
                 }}
                 onClick={this.handleVideoClick}
               ></video>
