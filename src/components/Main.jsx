@@ -77,7 +77,10 @@ class Main extends Component {
         audio: true,
       })
 
-      // Si la méthode navigator.mediaDevices.getDisplayMedia est appelée jla stocke dans la variable screenAvailable.
+     // en faisant "!!navigator.mediaDevices.getDisplayMedia" je vérifie si la methode getDisplayMedia est dispo dans le navigateur
+     // si c'est le cas ça veut dire que le navigateur supporte le partage d'écran
+     // donc ça me retrourne true et donc je met à jour ma state
+     // (state qui va déterminer si j'affiche le bouton de partage ou non)
       const screenAvailable = !!navigator.mediaDevices.getDisplayMedia
       this.setState({ screenAvailable })
 
@@ -131,6 +134,7 @@ class Main extends Component {
     }
   }
 
+// CREATE OFFER POUR LE PARTAGE
   getUserMediaSuccess = (stream) => {
     // "stream" contient mon objet MediaStream qui m'est retourné quand l'user a accepté qu'on ait acces à sa cam + micro..
     //(voir plus haut dans getUserMedia)
@@ -147,7 +151,7 @@ class Main extends Component {
       //je stream la petite bouille du streamer à tous les users dans la room en ajoutant le flux actuel à toute les connexions webRTC
       connections[id].addStream(window.localStream)
 
-      // ici je DOIS créer une offre qui contient un "SDP" (go check https://developer.mozilla.org/fr/docs/Glossary/SDP )
+      // ici je DOIS créer une offre qui contient un "SDP" (go check https://developer.mozilla.org/fr/docs/Glossary/SDP)
       // et ce sera envoyé aux autres users
       connections[id]
         .createOffer()
@@ -183,7 +187,8 @@ class Main extends Component {
               console.log(e)
             }
 
-            // du coup lorsqu'on désactive la caméra et l'audio, je lance black et silence qui vont creer un flux noir + supprimer l'audio
+            // du coup lorsqu'on désactive la caméra et l'audio,
+            // je lance black et silence qui vont creer un flux noir + supprimer l'audio
             let blackSilence = () => new MediaStream([this.silence()])
             window.localStream = blackSilence()
             this.myVideo.current.srcObject = window.localStream
@@ -194,7 +199,7 @@ class Main extends Component {
               connections[id]
                 .createOffer()
                 .then((description) =>
-                  connections[id].setLocalDescription(description)
+                  connections[id].setLocalDescription(description) 
                 )
                 .then(() => {
                   socket.emit(
@@ -244,8 +249,10 @@ class Main extends Component {
 
       connections[id].addStream(window.localStream)
 
-      connections[id].createOffer().then((description) => {
-        // évidamment si je veux partager ça aux autres utilisateurs je dois creer une "offer" qui contiendra mon SDP
+      connections[id].createOffer().then((description) => { 
+        // évidamment je partage un flux (partage d'écran cette fois ci) aux autres utilisateurs 
+        //je dois creer une "offer" qui contiendra mon SDP
+
         connections[id]
           .setLocalDescription(description)
           .then(() => {
@@ -260,6 +267,7 @@ class Main extends Component {
     }
 
     let videoElement = document.querySelector(`[data-socket="${socketId}"]`)
+
     if (videoElement) {
       this.requestFullScreen(videoElement)
     }
@@ -291,22 +299,27 @@ class Main extends Component {
     )
   }
 
-  gotMessageFromServer = (fromId, message) => {
-    let signal = JSON.parse(message)
+
+
+  // ici je vais réceptionner tout ce qui est SDP/iceCandidates
+  signalFromServer = (fromId, body) => {
+    let signal = JSON.parse(body)
 
     if (fromId !== socketId) { //jmassure que l'id du client (fromId) est différent du mien (socketId)
-      if (signal.sdp) { // si ya une prop "sdp" dans signal 
+      if (signal.sdp) { // si ya une prop "sdp" dans signal  (prop generé lors du createOffer)
         connections[fromId]
-          .setRemoteDescription(new RTCSessionDescription(signal.sdp)) // alors je controle le sdp 
+          .setRemoteDescription(new RTCSessionDescription(signal.sdp))// alors je controle le sdp de l'autre peer
           .then(() => {
-// si le type du sdp est "offer" ça veut dire que c'est une offre qui vient d'un autre client !
+// si le type du sdp est "offer" ça veut dire que c'est une offre qui vient d'un autre client btw
             if (signal.sdp.type === "offer") { 
               connections[fromId]
-                .createAnswer() // du coup je creer une réponse (answer) obligatoirement pour pouvoir accepter l'offer
+                .createAnswer() // du coup je creer une réponse (answer) à l'offer que j'ai reçu, 
+                //c'est obligatoire 
                 .then((description) => { 
                   connections[fromId] 
-                 //ensuite je dois aussi creer un sdp pour informer lautre client de ma réponse..
-                    .setLocalDescription(description)
+    // une fois arrivé à l'appel de setLocalDescription(),
+    // webRTC va commencer le processus de collecte des IceCandidates (fourni par navigateurs)
+    .setLocalDescription(description)
                     .then(() => {// déjà vu ..
                       socket.emit(// déjà vu ..
                         "signal",// déjà vu ..
@@ -322,8 +335,8 @@ class Main extends Component {
             }
 
 
-
-    // pour comprendre un peu ICE, jte conseille : https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate
+    // pour comprendre un peu ICE(Interactive Connectivity Establishment), 
+    //jte conseille : https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate ou alors chatGPT of course
     // Si tu veux d'un côté t'as les SDP (contiennent des infos type codec video/audio ou tout autre parametres.
     // Ca décrit COMMENT les médias doivent être échangés entres les peers)
     //d'un autre côté tu as les iceCandidates qui est un peu dans le même principe mais
@@ -332,33 +345,37 @@ class Main extends Component {
     // ICE et l'offre SDP doivent toujours être utilisés ensemble pour pouvoir établir une co webrtc
             if (this.iceCandidatesQueue[fromId]){
               this.iceCandidatesQueue[fromId].forEach((candidate) => { // un client envoi son message (fromId)
-                connections[fromId].addIceCandidate( // je recupere ses iceCandidates (car un client peut en avoir plusieuyrs)
-    // en ajoutant les iceCandidates  à ;la classe RTCIceCandidate les peers auront le meilleur path de connexion            
+                connections[fromId].addIceCandidate( // j'ajoute mes iceCandidates à ma connection p2p           
                 new RTCIceCandidate(candidate)  
                 )
               })
-  // quand tous les candidats ont été ajoutés à la classe RTCIceCandidate, ils sont delete car maintenant y en a plus bsoin
+  // quand tous les candidats ont été ajoutés à la classe RTCIceCandidate, ils sont delete car y en a plus bseoin
               delete this.iceCandidatesQueue[fromId] 
             }
           })
           .catch((e) => console.log(e))
       }
-
-      if (signal.ice) {
-        let iceCandidate = new RTCIceCandidate(signal.ice)
-        if (connections[fromId].remoteDescription) {
+      
+  // du coup logiquement après un createOffer ou createAnswer tu as des iceCandidates 
+// ça veut dire qu'un peer a trouvé un bon chemin de connexion réseau et il l'envoie pour qu'un autre peer puisse l'essayer
+      if (signal.ice) {  
+        let iceCandidate = new RTCIceCandidate(signal.ice)// du coup je creer mon obj RTCIceCandidate à partir du ice reçu
+        if (connections[fromId].remoteDescription) { // si setRemoteDescription s'est déroule comme i faut
           connections[fromId]
-            .addIceCandidate(iceCandidate)
+            .addIceCandidate(iceCandidate) // j'ajoute ENFIN l'icecandidate
             .catch((e) => console.log(e))
         } else {
-          if (!this.iceCandidatesQueue[fromId]) {
-            this.iceCandidatesQueue[fromId] = []
+          if (!this.iceCandidatesQueue[fromId]) { // Si pas de remoteDescription, 
+            //alors je stock les iceCandidates en attendant la remoteDescription
+            this.iceCandidatesQueue[fromId] = [] 
           }
-          this.iceCandidatesQueue[fromId].push(iceCandidate)
+        // du coup en attendant je met les iceCandidate dans une file d'attente
+          this.iceCandidatesQueue[fromId].push(iceCandidate) 
         }
       }
     }
   }
+
   enterFullScreenMode = (userId) => {
     let videoElement = document.querySelector(`[data-socket="${userId}"]`)
     if (videoElement) {
@@ -409,8 +426,8 @@ class Main extends Component {
     let height = String(100 / videoElements) + "%"
     let width = ""
     if (videoElements === 0 || videoElements === 1) {
-      width = "100%"
-      height = "100%"
+      width = "450px"
+      height = "500px"
     } else if (videoElements === 2) {
       width = "45%"
       height = "100%"
@@ -450,7 +467,7 @@ class Main extends Component {
   connectToSocketServer = () => {
     socket = io.connect(server_url, { secure: true })
 
-    socket.on("signal", this.gotMessageFromServer)
+    socket.on("signal", this.signalFromServer)
 
     socket.on("connect", () => {
       socket.emit("joinCall", window.location.href, this.state.username)
@@ -517,13 +534,14 @@ class Main extends Component {
         }))
 
         clients.forEach((socketListId) => {
-          connections[socketListId] = new RTCPeerConnection() //stockage des sockets id dans ma globale "connections"
+          connections[socketListId] = new RTCPeerConnection() //stockage des sockets id dans ma globale "connections",
+          // c'est ici que j'initialise la connection P2P avec webRTC
 
-          // Wait for their ice candidate
+          // je collecte mes iceCandidates
           connections[socketListId].onicecandidate = function (event) {
             if (event.candidate != null) {
               socket.emit(
-                "signal",
+                "signal", // je spread mes icecandidate via "signal"
                 socketListId,
                 JSON.stringify({ ice: event.candidate })
               )
@@ -532,11 +550,13 @@ class Main extends Component {
 
           // je check si un nouveau user (nouveau videoElement du coup) arrive dans la room
           connections[socketListId].onaddstream = (event) => {
-            // c un event de webRTC go voir : https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addstream_event
+    // c un event de webRTC go voir : https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addstream_event
 
             let searchVideo = document.querySelector(
               `[data-socket="${socketListId}"]`
             )
+          
+        
 
             if (searchVideo !== null) {
               // si j'fais pas cette condition ça montre un carré vide donc laissez please
@@ -563,6 +583,7 @@ class Main extends Component {
               video.style.setProperty("width", cssMesure.width)
               video.style.setProperty("height", cssMesure.height)
               video.setAttribute("data-socket", socketListId)
+              video.style.borderRadius ="25px"
               video.srcObject = event.stream
               video.autoplay = true
               video.playsinline = true
@@ -571,7 +592,6 @@ class Main extends Component {
             }
           }
 
-          // Add the local video stream
           if (!window.localStream) {
             window.localStream = new MediaStream([this.black(), this.silence()])
           }
@@ -589,12 +609,13 @@ class Main extends Component {
               connection.addStream(window.localStream)
             } catch (e) {}
 
+  // createOffer stream audio/video (pas le partage d'ecran!)
             connection
               .createOffer()
               .then((description) =>
                 connection.setLocalDescription(description)
               )
-              // localDescription va contnir des infos sur les params de session (codec audio video etc..) 
+              // localDescription va contnir des infos (sdp) sur les params de session (codec audio video etc..) 
               //obligé d'envoyer ces params pour la communication en webRTC
               .then(() =>
                 socket.emit(
@@ -737,13 +758,7 @@ class Main extends Component {
               </form>
             </div>
 
-            <div
-              style={{
-                justifyContent: "center",
-                textAlign: "center",
-                paddingTop: "40px",
-              }}
-            >
+            <div>
               <video
                 id="myVideo"
                 ref={this.myVideo}
@@ -751,11 +766,13 @@ class Main extends Component {
                 muted
                 style={{
                   objectFit: "fill",
-                  width: "30%",
+                  width: "100",
                   height: "30%",
+                  borderRadius:"25px"
                 }}
-                onClick={this.handleVideoClick}
-              ></video>
+                onClick={this.handleVideoClick}>
+
+                </video>
             </div>
           </div>
         ) : (
@@ -862,8 +879,9 @@ class Main extends Component {
                     backgroundColor: "black",
                     margin: "10px",
                     objectFit: "fill",
-                    width: "100%",
-                    height: "100%",
+                    width: "550px",
+                    height: "500px",
+                    borderRadius:"25px"
                   }}
                   onClick={this.handleVideoClick}
                 ></video>
