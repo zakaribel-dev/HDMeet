@@ -55,6 +55,9 @@ class Main extends Component {
       playUserConnectedSound: false,
       requestingSpeech: false,
       speechRequestMessage: "",
+      password: '',
+      authorizedPasswords: ['coco', 'bobo', 'zozo'], 
+
     }
     connections = {}
 
@@ -724,16 +727,25 @@ class Main extends Component {
   }
 
   handleUsername = (e) => {
-    this.setState({ username: e.target.value }, () => {
-      console.log("jsuis co en tant que  : " + this.state.username)
-    })
+    this.setState({ username: e.target.value })
   }
-  handleSubmit = (event) => {
-    event.preventDefault()
-    if (event.target.checkValidity()) {
-      this.connect()
-    }
+
+  handlePassword = (e) => {
+    this.setState({ password: e.target.value });
+}
+
+handleSubmit = (event) => {
+  event.preventDefault();
+
+  const {password, authorizedPasswords } = this.state;
+
+  if (authorizedPasswords.includes(password)) {
+    this.connect(); 
+  } else {
+    alert("vous êtes pas autorisé à entrer ici, allez zou!");
   }
+}
+
   sendMessage = () => {
     socket.emit("chat-message", this.state.message, this.state.username)
     this.setState({ message: "", sender: this.state.username })
@@ -759,6 +771,12 @@ class Main extends Component {
                 <Input
                   placeholder="Nom d'utilisateur"
                   onChange={(e) => this.handleUsername(e)}
+                  required
+                />
+                 <Input
+                  type="password"
+                  placeholder="Mot de passe"
+                  onChange={(e) => this.handlePassword(e)}
                   required
                 />
                 <Button

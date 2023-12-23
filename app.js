@@ -83,8 +83,8 @@ io.on('connection', (socket) => {
 				messages[key] = messages[key] || [];
 
 				messages[key].push({ sender, data, 'socket-id-sender': socket.id });
-				connections[key].forEach((recipient) => {
-					io.to(recipient).emit("chat-message", data, sender, socket.id);
+				connections[key].forEach((key) => {
+					io.to(key).emit("chat-message", data, sender, socket.id);
 				});
 				break;
 			}
