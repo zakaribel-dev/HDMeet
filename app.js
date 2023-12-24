@@ -1,14 +1,19 @@
 /* eslint-disable no-undef */
 const express = require('express')
 const http = require('http')
-var cors = require('cors')
+let cors = require('cors')
 const app = express()
 const bodyParser = require('body-parser')
 const path = require("path")
-var xss = require("xss")
+let xss = require("xss")
 
-var server = http.createServer(app)
-var io = require('socket.io')(server)
+let server = http.createServer(app)
+let io = require('socket.io')(server, {
+    cors: {
+        origin: "http://localhost:8000",
+        methods: ["GET", "POST"] 
+    }
+});
 
 app.use(cors())
 app.use(bodyParser.json())

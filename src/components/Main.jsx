@@ -9,7 +9,7 @@ import messageSound from "../assets/message_sound.mp3"
 import Rodal from "rodal"
 import "rodal/lib/rodal.css"
 import { message } from "antd" // superbe bibliotheque
-import "antd/dist/antd.css"
+
 import { Row } from "reactstrap"
 import "bootstrap/dist/css/bootstrap.css"
 import "../style/Video.css"
