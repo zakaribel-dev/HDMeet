@@ -31,6 +31,21 @@ let socket = null;
 let socketId = null;
 let videoElements = 0;
 
+
+const peerConnectionConfig = {
+  // mes server stuns (etablissements de co p2p avec la plus part des NAT)
+  iceServers: [
+    { urls: 'stun:stun.services.mozilla.com' }, 
+    { urls: 'stun:stun.l.google.com:19302' },
+    // si un user est derrière un nat restrictif ou un pare feu chiant, un serveur TURN prendra le relais
+    {
+      urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
+      credential: 'webrtc',
+      username: 'webrtc'
+    }
+  ]
+};
+
 class Main extends Component {
   constructor(props) {
     super(props);
@@ -553,7 +568,7 @@ class Main extends Component {
         }));
 
         clients.forEach((socketListId) => {
-          connections[socketListId] = new RTCPeerConnection(); //stockage des sockets id dans ma globale "connections",
+          connections[socketListId] = new RTCPeerConnection(peerConnectionConfig); //stockage des sockets id dans ma globale "connections",
           // c'est ici que j'initialise la connection P2P avec webRTC
 
           // je collecte mes iceCandidates

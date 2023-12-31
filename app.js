@@ -18,7 +18,7 @@ let io = require('socket.io')(server, {
 app.use(cors())
 app.use(bodyParser.json())
 
-if (process.env.NODE_ENV === 'production') {o
+if (process.env.NODE_ENV === 'production') {
 	app.use(express.static(__dirname + "/build"))
 	app.get("*", (req, res) => {
 		res.sendFile(path.join(__dirname + "/build/index.html"))
