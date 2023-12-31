@@ -14,7 +14,6 @@
     "concurrently": "^8.2.2",
     "cors": "^2.8.5",
     "express": "^4.17.1",
-    "faker": "^6.6.6",
     "nodemon": "^3.0.2",
     "react": "^18.2.0",
     "react-bootstrap": "^2.9.2",
@@ -31,7 +30,6 @@
     "rodal": "^2.1.0",
     "socket.io": "^4.7.2",
     "socket.io-client": "^4.7.2",
-    "standard": "^17.1.0",
     "xss": "^1.0.8"
   },
   "scripts": {

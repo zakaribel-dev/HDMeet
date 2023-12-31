@@ -779,7 +779,7 @@ class Main extends Component {
                 </Flex>
               </div>
             )}
-            o
+      
             <div className="askUsername">
               <form onSubmit={this.handleSubmit}>
                 <Input
