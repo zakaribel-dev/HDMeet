@@ -97,24 +97,24 @@ io.on('connection', (socket) => {
 
 
 	socket.on('disconnect', () => {
+		const updatedConnections = {};
+
 		for (const key in connections) {
-			const index = connections[key].indexOf(socket.id);
-
-			if (index !== -1) {
-				connections[key].splice(index, 1);
-
-				connections[key].forEach((recipient) => {
+			const remainingSockets = connections[key].filter(socketId => socketId !== socket.id);
+		
+			if (remainingSockets.length > 0) {
+				updatedConnections[key] = remainingSockets;
+				
+				remainingSockets.forEach((recipient) => {
 					io.to(recipient).emit("userLeft", socket.id);
 				});
-
-				console.log(`User vient de quitter : ${socket.username} avec ID: ${socket.id}`);
-				console.log('liste MAJ suite à deco du ou des users:', roomUsers[path]);
-				if (connections[key].length === 0) {
-					delete connections[key];
-				}
-				break;
+			} else {
+				console.log(`Tous les utilisateurs ont quitté la salle : ${key}`);
 			}
 		}
+		
+		connections = updatedConnections;
+		
 		for (let path in roomUsers) {
 			// contient tableau de tous les users dont l'id n'est pas égal au socket id, du coup ça contient les users de la room actuelle
             roomUsers[path] = roomUsers[path].filter(user => user.id !== socket.id); 
