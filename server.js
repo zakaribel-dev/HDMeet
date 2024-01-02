@@ -4,7 +4,7 @@ const http = require('http')
 let cors = require('cors')
 const app = express()
 const bodyParser = require('body-parser')
-const path = require("path")
+const path = require("path") // récuperer l'id de la room
 let xss = require("xss")
 
 let server = http.createServer(app)
@@ -27,12 +27,11 @@ if (process.env.NODE_ENV === 'production') {
 app.set('port', (process.env.PORT || 4001))
 
 sanitizeString = (str) => {
-	return xss(str)  // cette bibliotheque proteges des faille xss
+	return xss(str)  // cette bibliotheque protege des faille xss
 }
 
 connections = {}
 messages = {}
-timeOnline = {}
 let roomUsers = {};
 
 io.on('connection', (socket) => {
@@ -42,28 +41,28 @@ io.on('connection', (socket) => {
 		console.log(` ${username} a rejoin avec l'ID: ${socket.id} dans la room : ${path}`);
 		io.to(socket.id).emit('update-user-list', roomUsers[path]);
 
-        if (connections[path] === undefined) {
+        if (connections[path] === undefined) { // sinon il m'enquiquine
             connections[path] = [];
         }
-        connections[path].push(socket.id);
 
-        timeOnline[socket.id] = new Date();
+        connections[path].push(socket.id); // je stock des sockets id dans la room . connections va contenir la room et la liste des socket id qui sont dans la room
 
-        if (!roomUsers[path]) {
+
+        if (!roomUsers[path]) { // si pas d'users  dans la room -> tableau des users dans la room vide
             roomUsers[path] = [];
         }
-        roomUsers[path].push({ id: socket.id, username });
+        roomUsers[path].push({ id: socket.id, username }); // roomUsers va contenir socket id et usernames (en gros les username présents dans la room)
 
-        // Retarder légèrement l'envoi de la liste des utilisateurs
-		console.log('envoi de la liste des users MAJ', roomUsers[path]);
+		// emit de la liste des users dans la room
 		io.to(path).emit('update-user-list', roomUsers[path]);
-        for (let a = 0; a < connections[path].length; a++) {
-            io.to(connections[path][a]).emit("user-joined", socket.id, connections[path], username);
+        for (let i = 0; i < connections[path].length; i++) {
+			// j'envoie le socket actuel, la liste des sockets id  dans la room et l'username
+            io.to(connections[path][i]).emit("user-joined", socket.id, connections[path], username); 
         }
 		if (messages[path] !== undefined) {
-			for (let a = 0; a < messages[path].length; ++a) {
-				io.to(socket.id).emit("chat-message", messages[path][a]['data'],
-					messages[path][a]['sender'], messages[path][a]['socket-id-sender'])
+			for (let i = 0; i < messages[path].length;  i++) {
+				io.to(socket.id).emit("chat-message", messages[path][i]['data'],
+					messages[path][i]['sender'], messages[path][i]['socket-id-sender'])
 			}
 		}
 
@@ -117,8 +116,9 @@ io.on('connection', (socket) => {
 			}
 		}
 		for (let path in roomUsers) {
-            roomUsers[path] = roomUsers[path].filter(user => user.id !== socket.id);
-            // Mettre à jour la liste des utilisateurs pour tous les clients de la room
+			// contient tableau de tous les users dont l'id n'est pas égal au socket id, du coup ça contient les users de la room actuelle
+            roomUsers[path] = roomUsers[path].filter(user => user.id !== socket.id); 
+            // MAJ de la liste des utilisateurs pour tous les clients de la room
             io.to(path).emit('update-user-list', roomUsers[path]);
         }
 	});
