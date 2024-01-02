@@ -15,7 +15,7 @@ class Sidebar extends Component {
                     {isSidebarOpen ? "Cacher" : "Afficher"}
                 </Button>
                 <div className='smallContainer'>
-                <h3>Utilisateurs Connectés</h3>
+                <h3>Utilisateurs :</h3>
                 <ul>
                     {Object.values(usernames).map((username, index) => (
                         <li key={index}>

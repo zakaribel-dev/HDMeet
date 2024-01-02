@@ -57,7 +57,7 @@ io.on('connection', (socket) => {
         // Retarder légèrement l'envoi de la liste des utilisateurs
 		console.log('envoi de la liste des users MAJ', roomUsers[path]);
 		io.to(path).emit('update-user-list', roomUsers[path]);
-        for (let a = 0; a < connections[path].length; ++a) {
+        for (let a = 0; a < connections[path].length; a++) {
             io.to(connections[path][a]).emit("user-joined", socket.id, connections[path], username);
         }
 		if (messages[path] !== undefined) {

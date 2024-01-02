@@ -33,7 +33,7 @@ let videoElements = 0;
 
 
 const peerConnectionConfig = {
-  // mes server stuns (etablissements de co p2p avec la plus part des NAT)
+  // mes server stuns (etablissements de co p2p avec la pluspart des NAT)
   iceServers: [
     { urls: 'stun:stun.services.mozilla.com' }, 
     { urls: 'stun:stun.l.google.com:19302' },
@@ -71,7 +71,7 @@ class Main extends Component {
       requestingSpeech: false,
       speechRequestMessage: "",
       password: "",
-      authorizedPasswords: ["coco", "bobo", "zozo"],
+      authorizedPasswords: ["coco", "bobo", "zozo","toto","titi","popo","pipi"],
       loadingCamera: true,
     };
     connections = {};
@@ -108,9 +108,9 @@ class Main extends Component {
         this.setState({ loadingCamera: false });
       }
 
-      this.videoAvailable = !!videoStream; // videoAvailable à true si videoStream est true
+      this.videoAvailable = !!videoStream; // videoAvailable à true si videoStream est true et vis versa
       this.audioAvailable = !!audioStream; // meme délire
-      this.screenAvailable = screenAvailable; // meme delire
+      this.screenAvailable = screenAvailable;
     } catch (error) {
       console.error(error);
       this.setState({ loadingCamera: false });
@@ -135,12 +135,16 @@ class Main extends Component {
       (this.state.video && this.videoAvailable) ||
       (this.state.audio && this.audioAvailable)
     ) {
+      
       navigator.mediaDevices
         // en param je mets ce que je veux récuperer (l'utilisateur va recevoir une demande pour acceder à son micro + caméra)
         .getUserMedia({ video: this.state.video, audio: this.state.audio })
         // ce machin va mretourner un obj "MediaStream" qui est simplement le flux que j'ai récupéré
         .then(this.getUserMediaSuccess) //si c'est good j'apelle getUserMediaSuccess qui recuperera le MediaStream en param
-        .then((stream) => {})
+        .then((stream) => {
+
+
+        })
         .catch((e) => console.log(e));
     } else {
       try {
@@ -491,7 +495,11 @@ class Main extends Component {
   handleRequestSpeech = () => {
     const { username } = this.state;
     socket.emit("speechEvent", { username });
-    message.warning("Demande de prise de parole en cours..");
+    message.warning({
+      content: `Demande de prise de parole en cours..`,
+      className: "custom-message",
+      duration: 3,
+    });
   };
 
   connectToSocketServer = () => {
@@ -499,7 +507,11 @@ class Main extends Component {
 
     // demande de parole
     socket.on("speech-requested", ({ username }) => {
-      message.warning(`${username} souhaite prendre la parole.`);
+      message.warning({
+        content:`${username} souhaite prendre la parole.`,
+        className: "custom-message",
+        duration: 3,
+      });
     });
 
     socket.on("signal", this.signalFromServer);
@@ -531,7 +543,11 @@ class Main extends Component {
 
         if (id !== socketId) {
           this.playUserDisconnectedSound();
-          message.info(`${username} a quitté la conférence.`);
+          message.info({
+            content: `${username} a quitté la conférence.`,
+            className: "custom-message",
+            duration: 3,
+          });
         }
 
         if (video !== null) {
@@ -773,7 +789,11 @@ class Main extends Component {
   copyConfLink = () => {
     let text = window.location.href;
     navigator.clipboard.writeText(text).then(() => {
-      message.success("Lien copié !");
+      message.success({
+        content: `Lien copié !`,
+        className: "custom-message-link",
+        duration: 3,
+      });
     });
   };
 

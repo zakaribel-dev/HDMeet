@@ -82,6 +82,12 @@
  font-weight: 600  !important;
 }	
 
+.custom-message-link{
+  position: absolute !important;
+  top: 45px !important;
+  right: 64% !important;
+}
+
 .newConf {
 position: absolute !important;
 right: 10% !important;
