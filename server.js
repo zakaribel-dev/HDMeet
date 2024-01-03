@@ -36,7 +36,8 @@ let roomUsers = {};
 
 io.on('connection', (socket) => {
 
-    socket.on('joinCall', (path, username) => {
+	socket.on('joinCall', (path, username, email) => {
+  
         socket.username = username;
 		console.log(` ${username} a rejoin avec l'ID: ${socket.id} dans la room : ${path}`);
 		io.to(socket.id).emit('update-user-list', roomUsers[path]);
@@ -51,13 +52,13 @@ io.on('connection', (socket) => {
         if (!roomUsers[path]) { // si pas d'users  dans la room -> tableau des users dans la room vide
             roomUsers[path] = [];
         }
-        roomUsers[path].push({ id: socket.id, username }); // roomUsers va contenir socket id et usernames (en gros les username présents dans la room)
+        roomUsers[path].push({ id: socket.id, username, email });// roomUsers va contenir socket id et usernames (en gros les username présents dans la room)
 
 		// emit de la liste des users dans la room
 		io.to(path).emit('update-user-list', roomUsers[path]);
         for (let i = 0; i < connections[path].length; i++) {
 			// j'envoie le socket actuel, la liste des sockets id  dans la room et l'username
-            io.to(connections[path][i]).emit("user-joined", socket.id, connections[path], username); 
+			io.to(connections[path][i]).emit("user-joined", socket.id, connections[path], username, email);
         }
 		if (messages[path] !== undefined) {
 			for (let i = 0; i < messages[path].length;  i++) {
@@ -96,6 +97,7 @@ io.on('connection', (socket) => {
 	});
 
 
+
 	socket.on('disconnect', () => {
 		const updatedConnections = {};
 
@@ -114,7 +116,7 @@ io.on('connection', (socket) => {
 		}
 		
 		connections = updatedConnections;
-		
+
 		for (let path in roomUsers) {
 			// contient tableau de tous les users dont l'id n'est pas égal au socket id, du coup ça contient les users de la room actuelle
             roomUsers[path] = roomUsers[path].filter(user => user.id !== socket.id); 
@@ -124,9 +126,64 @@ io.on('connection', (socket) => {
 	});
 })
 
-app.get('/test', (req, res) => {
-	res.send('Hello World');
+
+							// DDB //
+
+const mysql = require('mysql2');
+
+const connection = mysql.createConnection({
+  host: 'localhost', 
+  user: 'root', 
+  password: '', 
+  database: 'hdmeet' 
+});
+
+connection.connect((err) => {
+  if (err) {
+    console.error('Erreur de connexion à la base de données MySQL :', err);
+  } else {
+    console.log('Connecté à la base de données hdmeet');
+  }
+});
+
+
+app.get('/users', (req, res) => {
+	connection.query('SELECT * FROM users', (err, results) => {
+	  if (err) {
+		console.error('Erreur lors de la récupération des utilisateurs depuis la base de données :', err);
+		res.status(500).json({ error: 'Erreur lors de la récupération des utilisateurs' });
+	  } else {
+		res.json(results);
+	  }
+	});
   });
+
+  app.put('/updateRoles', (req, res) => {
+    const { email, newRole } = req.body;
+	  console.log(req.body)
+    // Vérification des données reçues
+    if (!email || !newRole) {
+        return res.status(400).json({ error: 'Email et nouveau rôle sont requis.' });
+    }
+
+    const query = 'UPDATE users SET role = ? WHERE email = ?';
+    connection.query(query, [newRole, email], (err, results) => {
+
+        if (err) {
+            console.error('Erreur lors de la mise à jour du rôle de l\'utilisateur :', err);
+            return res.status(500).json({ error: 'Erreur lors de la mise à jour du rôle de l\'utilisateur' });
+        }
+
+        if (results.affectedRows === 0) {
+            return res.status(404).json({ error: 'Utilisateur non trouvé.' });
+        }
+
+        res.json({ message: 'Rôle de l\'utilisateur mis à jour avec succès.' });
+    });
+});
+
+
+
 
 
 server.listen(app.get('port'), () => {
