@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@material-ui/core";
 import { message } from "antd"; // superbe bibliothèque
 
  // J4AI DU FAIRE UN COMPONENT FONCTIONNEL PSK GALERE POUR LA REDIRECTION EN CLASSE  )-:  )-:  )-: 
-const Admin = () => {
+const AuthAdmin = () => {
   const [adminEmail, setAdminEmail] = useState("");
   const navigate = useNavigate();
 
@@ -64,4 +64,4 @@ const Admin = () => {
   );
 };
 
-export default Admin;
+export default AuthAdmin;

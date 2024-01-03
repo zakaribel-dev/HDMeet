@@ -21,7 +21,7 @@ class Home extends Component {
         <div>
           <img className='logo' src={logo} alt="" /> <br />
           <Button className='startBtn' variant="contained" color="primary" onClick={this.createRoom}>Commencer</Button>
-            <Link to="/Admin"> 
+            <Link to="/AuthAdmin"> 
             <Button variant="contained" color="primary">Administration</Button>
           </Link>
         </div>

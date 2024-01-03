@@ -161,7 +161,6 @@ app.get('/users', (req, res) => {
   app.put('/updateRoles', (req, res) => {
     const { email, newRole } = req.body;
 	  console.log(req.body)
-    // Vérification des données reçues
     if (!email || !newRole) {
         return res.status(400).json({ error: 'Email et nouveau rôle sont requis.' });
     }
