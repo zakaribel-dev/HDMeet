@@ -802,8 +802,8 @@ class Main extends Component {
     if (isAuthorized) {
       this.connect()
     } else {
-      alert("Hop hop hop, vous n'êtes pas autorisé à entrer ici, allez zou!")
-    }
+      message.error("Hop hop hop, vous n'êtes pas autorisé à entrer ici, allez zou!")
+   }
   }
 
   sendMessage = () => {
@@ -839,28 +839,29 @@ class Main extends Component {
                 </Flex>
               </div>
             )}
-            <Link to="/">
-              <Button variant="contained" color="secondary">
-                Retour à l'accueil
-              </Button>
-            </Link>
+         <Link to="/">
+          <img className='logo' src={logo} alt="" style={{width:"150px", position:'absolute',top: '0',left:'0'}} />
+          </Link>
+          <br /><br />
             <div className="askUsername">
               <form onSubmit={this.handleSubmit}>
-                <Input
+                <input
                   type="email"
                   placeholder="Votre email"
+                  name="email"
+                  autoComplete="email"
                   onChange={(e) => this.handleEmail(e)}
                   required
                   style={{backgroundColor:'white', borderRadius:'5px', margin:'10px'}}
                   />
-                <Input
+                <input
                   placeholder="Nom d'utilisateur"
                   onChange={(e) => this.handleUsername(e)}
                   required
                   style={{backgroundColor:'white', borderRadius:'5px', margin:'10px'}}
                 />
                 <Button
-                  className="btnConnect"
+                  className='startBtn'
                   type="submit"
                   variant="contained"
                   color="primary"
