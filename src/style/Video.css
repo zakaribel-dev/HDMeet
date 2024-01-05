@@ -198,6 +198,10 @@ font-weight: 600  !important;
   padding-right: 250px; 
 }
 
+.row > *{
+  padding: 0 !important;
+}
+
 
 .sidebar {
   width: 250px;

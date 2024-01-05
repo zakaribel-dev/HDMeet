@@ -464,21 +464,20 @@ class Main extends Component {
       width = "450px"
       height = "500px"
     } else if (videoElements === 2) {
-      width = "45%"
-      height = "100%"
-    } else if (videoElements === 3 || videoElements === 4) {
       width = "35%"
+    } else if (videoElements === 3 || videoElements === 4) {
+      width = "30%"
       height = "50%"
     } else {
       width = String(100 / videoElements) + "%"
     }
 
     let videos = main.querySelectorAll("video")
-    for (let a = 0; a < videos.length; ++a) {
-      videos[a].style.minWidth = minWidth
-      videos[a].style.minHeight = minHeight
-      videos[a].style.setProperty("width", width)
-      videos[a].style.setProperty("height", height)
+    for (let i = 0; i < videos.length; i++) {
+      videos[i].style.minWidth = minWidth
+      videos[i].style.minHeight = minHeight
+      videos[i].style.setProperty("width", width)
+      videos[i].style.setProperty("height", height)
     }
 
     return { minWidth, minHeight, width, height }
@@ -638,6 +637,7 @@ class Main extends Component {
                 borderStyle: "solid",
                 borderColor: "#bdbdbd",
                 objectFit: "fill",
+                backgroundColor:'black'
               }
               for (let i in css) video.style[i] = css[i]
 
@@ -986,6 +986,7 @@ class Main extends Component {
                     width: "550px",
                     height: "500px",
                     borderRadius: "25px",
+                    backgroundColor:'black'
                   }}
                   onClick={this.handleVideoClick}
                 ></video>

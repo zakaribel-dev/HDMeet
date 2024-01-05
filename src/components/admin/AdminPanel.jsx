@@ -14,7 +14,7 @@ class AdminPanel extends Component {
     super(props)
     this.state = {
       userEmail: "",
-      role: "ADMIN",
+      role: "test",
       showCreateUserForm: false,
       showRoleUpdateForm: false,
       newUserEmail: "",
@@ -135,12 +135,16 @@ class AdminPanel extends Component {
       })
   }
 
+  formatDate = (dateStr) => {
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+    return new Date(dateStr).toLocaleDateString('fr-FR', options);
+  }
+
   render() {
     const {
       showCreateUserForm,
       newUserEmail,
       newUserRole,
-      showRoleUpdateForm,
       users,
       showUserTable,
       selectedUserForRoleUpdate,
@@ -223,6 +227,7 @@ class AdminPanel extends Component {
               <tr>
                 <th>Email</th>
                 <th>Rôle</th>
+                <th>Date de création</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -231,6 +236,7 @@ class AdminPanel extends Component {
                 <tr key={user.email}>
                   <td><b>{user.email}</b></td>
                   <td><b>{user.role}</b></td>
+                  <td><b>{this.formatDate(user.created_At)}</b></td>
                   <td>
                     <button
                       className="red-button"
@@ -240,9 +246,8 @@ class AdminPanel extends Component {
                     </button>
                     <button
                       className="blue-button"
-                      onClick={() => this.openRoleUpdateModal(user)} // Ouvre la modal de modification du rôle
-                      
-                    >
+                      onClick={() => this.openRoleUpdateModal(user)}
+                      >
                       Modifier le rôle
                     </button>
                   </td>
@@ -263,21 +268,21 @@ class AdminPanel extends Component {
           <h2>Modifier le rôle de l'utilisateur</h2>
           {selectedUserForRoleUpdate && (
             <div>
-              <label>Email : </label>
+               {selectedUserForRoleUpdate.email}
               <input
+                type="hidden"
                 value={selectedUserForRoleUpdate.email}
-                readOnly 
-              />
+                />
               <br />
               <label>Nouveau rôle :</label>
               <select
                 value={this.state.role} 
-                onChange={this.handleRoleChange}
-                style={{ borderRadius: "8px", margin: "10px" }}
-              >
+                onChange={this.handleRoleChange}> 
                 <option value="ADMIN">ADMIN</option>
                 <option value="USER">USER</option>
+                
               </select>
+              <br />
               <button
                 onClick={this.handleUpdateRole}
                 variant="contained"
@@ -286,6 +291,7 @@ class AdminPanel extends Component {
               >
                 Modifier le rôle
               </button>
+              <br />
               <button className="red-button"  onClick={this.closeRoleUpdateModal}>Fermer</button>
             </div>
           )}

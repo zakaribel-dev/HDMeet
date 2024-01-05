@@ -148,7 +148,7 @@ connection.connect((err) => {
 
 
 app.get('/users', (req, res) => {
-	connection.query('SELECT * FROM users', (err, results) => {
+	connection.query('SELECT * FROM users ORDER BY created_At DESC', (err, results) => {
 	  if (err) {
 		console.error('Erreur lors de la récupération des utilisateurs depuis la base de données :', err);
 		res.status(500).json({ error: 'Erreur lors de la récupération des utilisateurs' });
