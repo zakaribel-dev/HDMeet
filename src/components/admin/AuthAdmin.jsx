@@ -16,18 +16,23 @@ const AuthAdmin = () => {
 
   const isValidEmail = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
+
+    if(email !== ""){
+      return regex.test(email);
+   }else{
+    return  message.warning('Adresse e-mail invalide. Veuillez entrer une adresse e-mail valide.');
+   }
   };
 
   const loginAsAdmin = () => {
-    if (!isValidEmail(adminEmail)) {
-      message.warning('Adresse e-mail invalide. Veuillez entrer une adresse e-mail valide.');
+    if (adminEmail === "") {
+      message.warning('merci de remplir ce foutu champ svp..');
       return;
     }
 
     axios.get("http://localhost:4001/users")
       .then((response) => {
-        const isAdmin = response.data.some(
+        const isAdmin = response.data.some( // some c'est cool pour eviter de faire une boucle for
           (user) => user.email === adminEmail && user.role.includes("ADMIN")
         );
 
