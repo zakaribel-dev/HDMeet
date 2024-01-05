@@ -212,6 +212,26 @@ app.post('/insertUser', (req, res) => {
 });
 
 
+app.delete('/deleteUser/:email', (req, res) => {
+	const email = sanitizeString(req.params.email);
+  
+	if (!email) {
+	  return res.status(400).json({ error: 'Email de l\'utilisateur à supprimer requis.' });
+	}
+  
+	const query = 'DELETE FROM users WHERE email = ?';
+	connection.query(query, [email], (err, results) => {
+	  if (err) {
+		console.error('Erreur lors de la suppression de l\'utilisateur :', err);
+		return res.status(500).json({ error: 'Erreur lors de la suppression de l\'utilisateur.' });
+	  }
+
+  
+	  res.json({ message: 'Utilisateur supprimé avec succès!' });
+	});
+  });
+  
+
 
 
 server.listen(app.get('port'), () => {
