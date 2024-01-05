@@ -52,7 +52,7 @@ class ControlBar extends Component {
           <IconButton
             style={{ color: "rgb(20, 20, 61)" }}
             onClick={onToggleScreenShare}
-          > {console.log(ScreenShareIcon)}
+          > 
             {isScreenSharing ? <ScreenShareIcon /> : <StopScreenShareIcon />}
           </IconButton> 
         )}

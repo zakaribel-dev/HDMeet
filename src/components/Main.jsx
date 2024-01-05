@@ -84,7 +84,6 @@ class Main extends Component {
       .get("http://localhost:4001/users")
       .then((response) => {
         this.setState({ authorizedUsers: response.data })
-        console.log(this.state.authorizedUsers)
       })
       .catch((error) => {
         console.error(
@@ -425,11 +424,6 @@ class Main extends Component {
   }
 
   requestFullScreen = (videoElement) => {
-    console.log(
-      "Tentative de passage en plein écran pour l'élément vidéo:",
-      videoElement
-    )
-
     if (videoElement.requestFullscreen) {
       videoElement.requestFullscreen()
     } else if (videoElement.mozRequestFullScreen) {
@@ -651,7 +645,6 @@ class Main extends Component {
               video.style.setProperty("height", cssMesure.height)
               video.setAttribute("data-socket", socketListId)
               video.style.borderRadius = "25px"
-              video.style.backgroundColor = "black"
               video.srcObject = event.stream
               video.autoplay = true
               video.playsinline = true
@@ -988,7 +981,6 @@ class Main extends Component {
                   autoPlay
                   muted
                   style={{
-                    backgroundColor: "black",
                     margin: "10px",
                     objectFit: "fill",
                     width: "550px",

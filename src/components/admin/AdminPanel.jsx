@@ -44,12 +44,7 @@ class AdminPanel extends Component {
     this.setState({ newUserRole: e.target.value })
   }
 
-  handleCreateUser = (e) => {
-    e.preventDefault()
-    const { newUserEmail, newUserRole } = this.state
 
-    // CREER L INSERT
-  }
 
   handleEmailChange = (e) => {
     this.setState({ userEmail: e.target.value })
@@ -59,7 +54,24 @@ class AdminPanel extends Component {
     this.setState({ role: e.target.value })
   }
 
-  handleSubmit = (e) => {
+  handleCreateUser = (e) => {
+    e.preventDefault()
+    const { newUserEmail, newUserRole } = this.state
+
+    axios
+      .post(`http://localhost:4001/insertUser`, {
+        email: newUserEmail,
+        role: newUserRole,
+      })
+      .then((response) => {
+        message.success("Nouvel accès créé pour "+ newUserEmail +" !")
+      })
+      .catch((error) => {
+        message.error(error.response.data.error)
+      })
+  }
+
+  handleUpdateRole = (e) => {
     e.preventDefault()
     const { userEmail, role } = this.state
 
@@ -107,7 +119,7 @@ class AdminPanel extends Component {
               <label>
                 <b>Email du nouvel utilisateur: </b>
               </label>
-              <Input
+              <input
                 type="email"
                 value={newUserEmail}
                 onChange={this.handleNewUserEmailChange}
@@ -147,13 +159,13 @@ class AdminPanel extends Component {
           </Button>
 
           {showRoleUpdateForm && (
-            <form onSubmit={this.handleSubmit}>
+            <form onSubmit={this.handleUpdateRole}>
               <div>
                 <label>
                   <b>Email de l'utilisateur : </b>
                 </label>
 
-                <Input
+                <input
                   type="email"
                   value={this.state.userEmail}
                   onChange={this.handleEmailChange}

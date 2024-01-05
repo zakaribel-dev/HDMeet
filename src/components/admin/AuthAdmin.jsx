@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@material-ui/core";
-import { message } from "antd"; // superbe bibliothèque
+import { message } from "antd"; // superbe bibliothèque..
 import logo from '../../assets/hdmlogo.png';
 
  // J4AI DU FAIRE UN COMPONENT FONCTIONNEL PSK GALERE POUR LA REDIRECTION EN CLASSE  )-:  )-:  )-: 
@@ -11,12 +11,17 @@ const AuthAdmin = () => {
   const navigate = useNavigate();
 
   const handleAdminEmailChange = (e) => {
-    setAdminEmail(e.target.value);
+    setAdminEmail(e.target.value.toLowerCase()); // jpréviens la casse 
+  };
+
+  const isValidEmail = (email) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
   };
 
   const loginAsAdmin = () => {
-    if (adminEmail === "") {
-      message.warning('Merci de remplir ce foutu champ svp.. ');
+    if (!isValidEmail(adminEmail)) {
+      message.warning('Adresse e-mail invalide. Veuillez entrer une adresse e-mail valide.');
       return;
     }
 

@@ -10,9 +10,11 @@
 
 .custom-message { 
   position: fixed;
-  top: 20px; 
-  right: 150px;
+  top: 35px; 
+  right: 125px;
   z-index: 9999; 
+  color: black;
+  font-weight: bolder ;
 }
 .video-container {
   position: relative;
@@ -95,6 +97,8 @@
   position: absolute !important;
   top: 45px !important;
   right: 64% !important;
+  color: black !important;
+  font-weight: bolder !important;
 }
 
 .newConf {

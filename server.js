@@ -152,14 +152,21 @@ app.get('/users', (req, res) => {
 	  if (err) {
 		console.error('Erreur lors de la récupération des utilisateurs depuis la base de données :', err);
 		res.status(500).json({ error: 'Erreur lors de la récupération des utilisateurs' });
-	  } else {
-		res.json(results);
+	  }else {
+		const sanitizedResults = results.map(user => ({
+		  ...user,
+		  email: sanitizeString(user.email),
+		}));
+		res.json(sanitizedResults);
 	  }
 	});
   });
-
   app.put('/updateRoles', (req, res) => {
-    const { email, newRole } = req.body;
+    let { email, newRole } = req.body;
+
+	email = sanitizeString(email);
+	newRole = sanitizeString(newRole);
+
 	  console.log(req.body)
     if (!email || !newRole) {
         return res.status(400).json({ error: 'Email et nouveau rôle sont requis.' });
@@ -181,6 +188,28 @@ app.get('/users', (req, res) => {
     });
 });
 
+
+
+app.post('/insertUser', (req, res) => {
+    let { email, role } = req.body;
+	console.log(email, role)
+    email = sanitizeString(email);
+    role = sanitizeString(role);
+
+    if (!email || !role) {
+        return res.status(400).json({ error: 'Email et rôle sont requis.' });
+    }
+
+    const query = 'INSERT INTO users (email, role) VALUES (?, ?)';
+    connection.query(query, [email, role], (err) => {
+        if (err) {
+            console.error('Erreur lors de l\'insertion de l\'utilisateur :', err);
+            return res.status(500).json({ error: 'Erreur lors de l\'insertion de l\'utilisateur.' });
+        }
+
+        res.json({ message: 'Utilisateur inséré avec succès!' });
+    });
+});
 
 
 
