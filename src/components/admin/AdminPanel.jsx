@@ -4,8 +4,10 @@ import { Input, Button } from "@material-ui/core"
 import { Link } from "react-router-dom"
 import { message } from "antd" // superbe bibliothèque..
 import logo from "../../assets/hdmlogo.png"
-
+import Rodal from "rodal"
+import "rodal/lib/rodal.css"
 import axios from "axios"
+import '../../style/Admin.css';
 
 class AdminPanel extends Component {
   constructor(props) {
@@ -19,6 +21,7 @@ class AdminPanel extends Component {
       newUserRole: "USER",
       users: [],
       showUserTable: false,
+      selectedUserForRoleUpdate: null,
     }
   }
   componentDidMount() {
@@ -34,6 +37,17 @@ class AdminPanel extends Component {
       .catch((error) => {
         message.error("Erreur lors de la récupération des utilisateurs")
       })
+  }
+
+  openRoleUpdateModal = (user) => {
+    this.setState({
+      selectedUserForRoleUpdate: user,
+      role: user.role,
+    })
+  }
+
+  closeRoleUpdateModal = () => {
+    this.setState({ selectedUserForRoleUpdate: null })
   }
 
   toggleRoleUpdateForm = () => {
@@ -91,7 +105,8 @@ class AdminPanel extends Component {
 
   handleUpdateRole = (e) => {
     e.preventDefault()
-    const { userEmail, role } = this.state
+    const { role } = this.state;
+    const userEmail = this.state.selectedUserForRoleUpdate.email;
 
     axios
       .put(`http://localhost:4001/updateRoles`, {
@@ -113,7 +128,7 @@ class AdminPanel extends Component {
       .delete(`http://localhost:4001/deleteUser/${email}`)
       .then(() => {
         message.success("Utilisateur supprimé avec succès")
-        this.fetchUsers() 
+        this.fetchUsers()
       })
       .catch((error) => {
         message.error("Erreur lors de la suppression de l'utilisateur")
@@ -128,6 +143,7 @@ class AdminPanel extends Component {
       showRoleUpdateForm,
       users,
       showUserTable,
+      selectedUserForRoleUpdate,
     } = this.state
 
     return (
@@ -192,55 +208,9 @@ class AdminPanel extends Component {
               </Button>
             </form>
           )}
-
-          <br />
-          <Button onClick={this.toggleRoleUpdateForm} variant="contained">
-            {showRoleUpdateForm
-              ? "Cacher le formulaire de rôle"
-              : "Modifier un rôle"}
-          </Button>
-
-          {showRoleUpdateForm && (
-            <form onSubmit={this.handleUpdateRole}>
-              <div>
-                <label>
-                  <b>Email de l'utilisateur : </b>
-                </label>
-
-                <input
-                  type="email"
-                  value={this.state.userEmail}
-                  onChange={this.handleEmailChange}
-                  required
-                  style={{
-                    backgroundColor: "white",
-                    borderRadius: "8px",
-                    margin: "10px",
-                  }}
-                />
-              </div>
-              <div>
-                <label>
-                  <b>Choisissez le rôle :</b>
-                </label>
-                <select
-                  value={this.state.role}
-                  onChange={this.handleRoleChange}
-                  style={{ borderRadius: "8px", margin: "10px" }}
-                >
-                  <option value="ADMIN">ADMIN</option>
-                  <option value="USER">USER</option>
-                </select>
-              </div>
-              <br />
-              <Button variant="contained" color="primary" type="submit">
-                Modifier le rôle
-              </Button>
-            </form>
-          )}
         </div>
 
-<br />
+        <br />
         <Button onClick={this.toggleUserTable} variant="contained">
           {showUserTable
             ? "Cacher le tableau"
@@ -248,8 +218,8 @@ class AdminPanel extends Component {
         </Button>
 
         {showUserTable && (
-        <table className="user-table">
-        <thead>
+          <table className="user-table">
+            <thead>
               <tr>
                 <th>Email</th>
                 <th>Rôle</th>
@@ -259,11 +229,21 @@ class AdminPanel extends Component {
             <tbody>
               {users.map((user) => (
                 <tr key={user.email}>
-                  <td>{user.email}</td>
-                  <td>{user.role}</td>
+                  <td><b>{user.email}</b></td>
+                  <td><b>{user.role}</b></td>
                   <td>
-                  <button className="delete-button" onClick={() => this.handleDeleteUser(user.email)}>
+                    <button
+                      className="red-button"
+                      onClick={() => this.handleDeleteUser(user.email)}
+                    >
                       Supprimer
+                    </button>
+                    <button
+                      className="blue-button"
+                      onClick={() => this.openRoleUpdateModal(user)} // Ouvre la modal de modification du rôle
+                      
+                    >
+                      Modifier le rôle
                     </button>
                   </td>
                 </tr>
@@ -271,6 +251,45 @@ class AdminPanel extends Component {
             </tbody>
           </table>
         )}
+
+        <Rodal
+          visible={selectedUserForRoleUpdate !== null}
+          onClose={this.closeRoleUpdateModal}
+          animation="zoom"
+          customStyles={{
+            width: "300px",
+          }}
+        >
+          <h2>Modifier le rôle de l'utilisateur</h2>
+          {selectedUserForRoleUpdate && (
+            <div>
+              <label>Email : </label>
+              <input
+                value={selectedUserForRoleUpdate.email}
+                readOnly 
+              />
+              <br />
+              <label>Nouveau rôle :</label>
+              <select
+                value={this.state.role} 
+                onChange={this.handleRoleChange}
+                style={{ borderRadius: "8px", margin: "10px" }}
+              >
+                <option value="ADMIN">ADMIN</option>
+                <option value="USER">USER</option>
+              </select>
+              <button
+                onClick={this.handleUpdateRole}
+                variant="contained"
+                className="green-button"
+                type="submit"
+              >
+                Modifier le rôle
+              </button>
+              <button className="red-button"  onClick={this.closeRoleUpdateModal}>Fermer</button>
+            </div>
+          )}
+        </Rodal>
       </div>
     )
   }

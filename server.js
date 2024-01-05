@@ -155,12 +155,15 @@ app.get('/users', (req, res) => {
 	  }else {
 		const sanitizedResults = results.map(user => ({
 		  ...user,
-		  email: sanitizeString(user.email),
+		  //Si un pti malin a réussi je n'sais comment a injecter du code dans la bdd bah je nettoie ça avant d'envoyer au client
+		  email: sanitizeString(user.email), 
 		}));
-		res.json(sanitizedResults);
+		res.json(sanitizedResults); 
 	  }
 	});
   });
+
+
   app.put('/updateRoles', (req, res) => {
     let { email, newRole } = req.body;
 
