@@ -849,6 +849,8 @@ class Main extends Component {
                   />
                 <input
                   placeholder="Nom d'utilisateur"
+                  type="text"
+                  name="text"
                   onChange={(e) => this.handleUsername(e)}
                   required
                   style={{backgroundColor:'white', borderRadius:'5px', margin:'10px'}}

@@ -62,6 +62,7 @@ const AuthAdmin = () => {
       <div className="content">
       <input
         type="email"
+        name="email"
         placeholder="Email administrateur"
         onChange={handleAdminEmailChange}
         onKeyDown={handleKeyDown}

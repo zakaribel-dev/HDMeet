@@ -166,8 +166,8 @@ class AdminPanel extends Component {
           />
         </Link>
         <div className="content">
-          <h1 style={{ fontFamily: "Nunito / Nunito Sans" }}>
-            <i>Administration</i>
+          <h1 style={{ fontFamily: "Nunito / Nunito Sans"}}>
+            Administration
           </h1>
           <br />
           <Button onClick={this.toggleCreateUserForm} variant="contained">
@@ -268,7 +268,8 @@ class AdminPanel extends Component {
           <h2>Modifier le rôle de l'utilisateur</h2>
           {selectedUserForRoleUpdate && (
             <div>
-               {selectedUserForRoleUpdate.email}
+              <br />
+              <i> <b>{selectedUserForRoleUpdate.email}</b></i> <br />
               <input
                 type="hidden"
                 value={selectedUserForRoleUpdate.email}
@@ -282,7 +283,7 @@ class AdminPanel extends Component {
                 <option value="USER">USER</option>
                 
               </select>
-              <br />
+              <br /> <br />
               <button
                 onClick={this.handleUpdateRole}
                 variant="contained"
