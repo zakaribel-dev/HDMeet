@@ -1,6 +1,6 @@
 // AdminPanel.jsx
 import React, { Component } from "react"
-import { Input, Button } from "@material-ui/core"
+import { Button } from "@material-ui/core"
 import { Link } from "react-router-dom"
 import { message } from "antd" // superbe bibliothèque..
 import logo from "../../assets/hdmlogo.png"
