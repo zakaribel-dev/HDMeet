@@ -13,17 +13,7 @@ const AuthAdmin = () => {
   const handleAdminEmailChange = (e) => {
     setAdminEmail(e.target.value.toLowerCase()); // jpréviens la casse 
   };
-
-  const isValidEmail = (email) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if(email !== ""){
-      return regex.test(email);
-   }else{
-    return  message.warning('Adresse e-mail invalide. Veuillez entrer une adresse e-mail valide.');
-   }
-  };
-
+  
   const loginAsAdmin = () => {
     if (adminEmail === "") {
       message.warning('merci de remplir ce foutu champ svp..');
