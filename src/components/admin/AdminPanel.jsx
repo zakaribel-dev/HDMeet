@@ -1,8 +1,8 @@
-// AdminPanel.jsx
+// Import des dépendances
 import React, { Component } from "react"
 import { Button } from "@material-ui/core"
 import { Link } from "react-router-dom"
-import { message } from "antd" // superbe bibliothèque..
+import { message } from "antd"
 import logo from "../../assets/hdmlogo.png"
 import Rodal from "rodal"
 import "rodal/lib/rodal.css"
@@ -10,9 +10,12 @@ import axios from "axios"
 import "../../style/Admin.css"
 
 class AdminPanel extends Component {
+
+  
   constructor(props) {
     super(props)
     this.state = {
+      // État initial
       userEmail: "",
       role: "ADMIN",
       showCreateUserForm: false,
@@ -22,15 +25,23 @@ class AdminPanel extends Component {
       users: [],
       showUserTable: false,
       selectedUserForRoleUpdate: null,
-      showPasswordInput: false,
+      showPasswordInputForUpdate: false,
+      showPasswordInputForCreate: false,
       password: "",
+      newPassword: "",
     }
+
+  
   }
   componentDidMount() {
-    this.fetchUsers()
+    this.fetchUsers();
+    const adminEmail = localStorage.getItem('adminEmail');
+    this.setState({ userEmail: adminEmail });
   }
 
+
   fetchUsers = () => {
+    // Fonction pour récupérer les utilisateurs depuis le serveur
     axios
       .get(`http://localhost:4001/users`)
       .then((response) => {
@@ -42,6 +53,7 @@ class AdminPanel extends Component {
   }
 
   openRoleUpdateModal = (user) => {
+    // Fonction pour ouvrir la fenêtre de mise à jour du rôle
     this.setState({
       selectedUserForRoleUpdate: user,
       role: user.role,
@@ -49,45 +61,61 @@ class AdminPanel extends Component {
   }
 
   closeRoleUpdateModal = () => {
-    this.setState({ selectedUserForRoleUpdate: null })
+    // Fonction pour fermer la fenêtre de mise à jour du rôle
+    this.setState({
+      selectedUserForRoleUpdate: null,
+      showPasswordInputForUpdate: false,
+    })
   }
 
   toggleRoleUpdateForm = () => {
     this.setState((prevState) => ({
       showRoleUpdateForm: !prevState.showRoleUpdateForm,
+      showPasswordInputForUpdate: prevState.role === "ADMIN",
     }))
   }
 
   toggleCreateUserForm = () => {
     this.setState((prevState) => ({
       showCreateUserForm: !prevState.showCreateUserForm,
+      showPasswordInputForCreate: prevState.newUserRole === "ADMIN",
     }))
   }
 
   toggleUserTable = () => {
+    // Fonction pour basculer l'affichage du tableau des utilisateurs
     this.setState((prevState) => ({
       showUserTable: !prevState.showUserTable,
     }))
   }
 
   handleNewUserEmailChange = (e) => {
+    // Fonction pour gérer le changement de l'email du nouvel utilisateur
     this.setState({ newUserEmail: e.target.value })
   }
 
   handleNewUserRoleChange = (e) => {
+    // Fonction pour gérer le changement du rôle du nouvel utilisateur
     const newUserRole = e.target.value
-    const showPasswordInput = newUserRole === "ADMIN"
-    this.setState({ newUserRole, showPasswordInput })
+    const showPasswordInputForCreate = newUserRole === "ADMIN"
+    this.setState({ newUserRole, showPasswordInputForCreate })
   }
+
   handleEmailChange = (e) => {
+    // Fonction pour gérer le changement de l'email de l'utilisateur
     this.setState({ userEmail: e.target.value })
   }
 
   handleRoleChange = (e) => {
-    this.setState({ role: e.target.value })
+    const newRole = e.target.value
+    const showPasswordInputForUpdate = newRole === "ADMIN"
+    this.setState({ role: newRole, showPasswordInputForUpdate })
+  
+    console.log("Nouveau rôle sélectionné :", newRole)
   }
 
   handleCreateUser = (e) => {
+    // Fonction pour gérer la création d'un nouvel utilisateur
     e.preventDefault()
     const { newUserEmail, newUserRole, password } = this.state
 
@@ -95,7 +123,7 @@ class AdminPanel extends Component {
       .post(`http://localhost:4001/insertUser`, {
         email: newUserEmail,
         role: newUserRole,
-        password: newUserRole === "ADMIN" ? password : "", // Envoyer le mot de passe uniquement si le rôle est "ADMIN"
+        password: newUserRole === "ADMIN" ? password : "",
       })
       .then((response) => {
         message.success("Nouvel accès créé pour " + newUserEmail + " !")
@@ -108,18 +136,20 @@ class AdminPanel extends Component {
   }
 
   handleUpdateRole = (e) => {
+    // Fonction pour gérer la mise à jour du rôle de l'utilisateur en cours de mise à jour
     e.preventDefault()
-    const { role } = this.state
+    const { role, newPassword } = this.state
     const userEmail = this.state.selectedUserForRoleUpdate.email
 
     axios
       .put(`http://localhost:4001/updateRoles`, {
         email: userEmail,
         newRole: role,
+        newPassword: role === "ADMIN" ? newPassword : "",
       })
       .then((response) => {
-        // message.success(JSON.stringify(response.data.message)) (il maffiche msg entre guillemets laisse beton on verra apres..)
         message.success("Rôle mis à jour !")
+        console.log("new pass " +newPassword)
         this.fetchUsers()
       })
       .catch((error) => {
@@ -128,6 +158,7 @@ class AdminPanel extends Component {
   }
 
   handleDeleteUser = (email) => {
+    // Fonction pour supprimer un utilisateur
     axios
       .delete(`http://localhost:4001/deleteUser/${email}`)
       .then(() => {
@@ -140,6 +171,7 @@ class AdminPanel extends Component {
   }
 
   formatDate = (dateStr) => {
+    // Fonction pour formater une date en format français
     const options = {
       year: "numeric",
       month: "2-digit",
@@ -158,7 +190,8 @@ class AdminPanel extends Component {
       users,
       showUserTable,
       selectedUserForRoleUpdate,
-      showPasswordInput,
+      showPasswordInputForUpdate,
+      showPasswordInputForCreate,
       password,
     } = this.state
 
@@ -178,7 +211,7 @@ class AdminPanel extends Component {
           />
         </Link>
         <div className="content">
-          <h1 style={{ fontFamily: "Nunito / Nunito Sans" }}>Administration</h1>
+          <h1 style={{ fontFamily: "Nunito / Nunito Sans" }}>Administrateur(trice) : <u>{this.state.userEmail}</u> </h1>
           <br />
           <Button onClick={this.toggleCreateUserForm} variant="contained">
             {showCreateUserForm
@@ -217,7 +250,7 @@ class AdminPanel extends Component {
                   <option value="USER">USER</option>
                 </select>
               </div>
-              {showPasswordInput && (
+              {showPasswordInputForCreate && (
                 <div>
                   <label>
                     <b>Mot de passe:</b>
@@ -317,11 +350,34 @@ class AdminPanel extends Component {
               <br />
               <input type="hidden" value={selectedUserForRoleUpdate.email} />
               <br />
-              <label>Nouveau rôle :</label>
+              <label>
+                {" "}
+                <b>Nouveau rôle : &nbsp;</b>
+              </label>
               <select value={this.state.role} onChange={this.handleRoleChange}>
                 <option value="ADMIN">ADMIN</option>
                 <option value="USER">USER</option>
               </select>
+              {showPasswordInputForUpdate && (
+                <div>
+                  <label>
+                    <b>Mot de passe:</b>
+                  </label>
+                  <input
+                    type="password"
+                    value={this.state.newPassword}
+                    onChange={(e) =>
+                      this.setState({ newPassword: e.target.value })
+                    }
+                    required
+                    style={{
+                      backgroundColor: "white",
+                      borderRadius: "8px",
+                      margin: "10px",
+                    }}
+                  />
+                </div>
+              )}
               <br /> <br />
               <button
                 onClick={this.handleUpdateRole}

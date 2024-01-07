@@ -167,32 +167,68 @@ app.get('/users', (req, res) => {
 
 
 app.put('/updateRoles', (req, res) => {
-	let { email, newRole } = req.body;
-
+	let { email, newRole, newPassword } = req.body;
+     
 	email = sanitizeString(email);
 	newRole = sanitizeString(newRole);
+	newPassword = sanitizeString(newPassword);
 
-	console.log(req.body)
 	if (!email || !newRole) {
-		return res.status(400).json({ error: 'Email et nouveau rôle sont requis.' });
+	  return res.status(400).json({ error: 'Email et nouveau rôle sont requis.' });
 	}
+  
+	let query = 'UPDATE users SET role = ?';
+	let queryParams = [newRole, email];
+  
+	// Si j'ai select "ADMIN" dans le form
+	if (newRole === "ADMIN" && newPassword) {
 
-	const query = 'UPDATE users SET role = ? WHERE email = ?';
-	connection.query(query, [newRole, email], (err, results) => {
-
+	  bcrypt.hash(newPassword, 10, (err, hashedPassword) => {
 		if (err) {
-			console.error('Erreur lors de la mise à jour du rôle de l\'utilisateur :', err);
-			return res.status(500).json({ error: 'Erreur lors de la mise à jour du rôle de l\'utilisateur' });
+		  console.error('Erreur lors du hachage du mot de passe :', err);
+		  return res.status(500).json({ error: 'Erreur lors du hachage du mot de passe.' });
 		}
+  
+		query += ', password = ?'; // je concatene ", password = ? " à ma query
+		queryParams = [newRole,hashedPassword, email];
 
-		if (results.affectedRows === 0) {
+			console.log("email  " + email )
+			console.log( "newRole " + newRole)
+			console.log( "newPassword "+ newPassword)	
+			console.log("queryParams " + queryParams)
+			console.log('query ' + query)
+		// je peux execute la query avec ma query concaténée   ( "[...queryParams, email]"  je fusionnne les elements de queryParams avec email pour en faire un novel array )
+		connection.query(query + ' WHERE email = ?', [...queryParams], (err, results) => {
+		  if (err) {
+			console.error('Erreur lors de la mise à jour du rôle et du mot de passe de l\'utilisateur :', err);
+			return res.status(500).json({ error: 'Erreur lors de la mise à jour du rôle et du mot de passe de l\'utilisateur.' });
+		  }
+  
+		  if (results.affectedRows === 0) {
 			return res.status(404).json({ error: 'Utilisateur non trouvé.' });
+		  }
+  
+		  res.json({ message: 'Rôle et mot de passe de l\'utilisateur mis à jour avec succès.' });
+		});
+	  });
+	} else {
+	  // Sinon je met juste à jour son role (si j'ai pas select admin dans le form)
+	  console.log("KOUERY : " +query, "queryPaRAMS : " + queryParams)
+	  connection.query(query + ' WHERE email = ?', queryParams, (err, results) => {
+		if (err) {
+		  console.error('Erreur lors de la mise à jour du rôle de l\'utilisateur :', err);
+		  return res.status(500).json({ error: 'Erreur lors de la mise à jour du rôle de l\'utilisateur.' });
 		}
-
+  
+		if (results.affectedRows === 0) {
+		  return res.status(404).json({ error: 'Utilisateur non trouvé.' });
+		}
+  
 		res.json({ message: 'Rôle de l\'utilisateur mis à jour avec succès.' });
-	});
-});
-
+	  });
+	}
+  });
+  
 
 
 app.post('/insertUser', (req, res) => {
