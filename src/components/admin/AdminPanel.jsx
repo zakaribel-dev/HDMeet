@@ -7,14 +7,14 @@ import logo from "../../assets/hdmlogo.png"
 import Rodal from "rodal"
 import "rodal/lib/rodal.css"
 import axios from "axios"
-import '../../style/Admin.css';
+import "../../style/Admin.css"
 
 class AdminPanel extends Component {
   constructor(props) {
     super(props)
     this.state = {
       userEmail: "",
-      role: "test",
+      role: "ADMIN",
       showCreateUserForm: false,
       showRoleUpdateForm: false,
       newUserEmail: "",
@@ -22,6 +22,8 @@ class AdminPanel extends Component {
       users: [],
       showUserTable: false,
       selectedUserForRoleUpdate: null,
+      showPasswordInput: false,
+      password: "",
     }
   }
   componentDidMount() {
@@ -73,9 +75,10 @@ class AdminPanel extends Component {
   }
 
   handleNewUserRoleChange = (e) => {
-    this.setState({ newUserRole: e.target.value })
+    const newUserRole = e.target.value
+    const showPasswordInput = newUserRole === "ADMIN"
+    this.setState({ newUserRole, showPasswordInput })
   }
-
   handleEmailChange = (e) => {
     this.setState({ userEmail: e.target.value })
   }
@@ -86,16 +89,17 @@ class AdminPanel extends Component {
 
   handleCreateUser = (e) => {
     e.preventDefault()
-    const { newUserEmail, newUserRole } = this.state
+    const { newUserEmail, newUserRole, password } = this.state
 
     axios
       .post(`http://localhost:4001/insertUser`, {
         email: newUserEmail,
         role: newUserRole,
+        password: newUserRole === "ADMIN" ? password : "", // Envoyer le mot de passe uniquement si le rôle est "ADMIN"
       })
       .then((response) => {
         message.success("Nouvel accès créé pour " + newUserEmail + " !")
-        this.setState({ newUserEmail: "" })
+        this.setState({ newUserEmail: "", password: "" })
         this.fetchUsers()
       })
       .catch((error) => {
@@ -105,8 +109,8 @@ class AdminPanel extends Component {
 
   handleUpdateRole = (e) => {
     e.preventDefault()
-    const { role } = this.state;
-    const userEmail = this.state.selectedUserForRoleUpdate.email;
+    const { role } = this.state
+    const userEmail = this.state.selectedUserForRoleUpdate.email
 
     axios
       .put(`http://localhost:4001/updateRoles`, {
@@ -136,8 +140,14 @@ class AdminPanel extends Component {
   }
 
   formatDate = (dateStr) => {
-    const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
-    return new Date(dateStr).toLocaleDateString('fr-FR', options);
+    const options = {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+    return new Date(dateStr).toLocaleDateString("fr-FR", options)
   }
 
   render() {
@@ -148,6 +158,8 @@ class AdminPanel extends Component {
       users,
       showUserTable,
       selectedUserForRoleUpdate,
+      showPasswordInput,
+      password,
     } = this.state
 
     return (
@@ -166,9 +178,7 @@ class AdminPanel extends Component {
           />
         </Link>
         <div className="content">
-          <h1 style={{ fontFamily: "Nunito / Nunito Sans"}}>
-            Administration
-          </h1>
+          <h1 style={{ fontFamily: "Nunito / Nunito Sans" }}>Administration</h1>
           <br />
           <Button onClick={this.toggleCreateUserForm} variant="contained">
             {showCreateUserForm
@@ -207,9 +217,34 @@ class AdminPanel extends Component {
                   <option value="USER">USER</option>
                 </select>
               </div>
-              <Button type="submit" variant="contained" color="primary">
+              {showPasswordInput && (
+                <div>
+                  <label>
+                    <b>Mot de passe:</b>
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) =>
+                      this.setState({ password: e.target.value })
+                    }
+                    required
+                    style={{
+                      backgroundColor: "white",
+                      borderRadius: "8px",
+                      margin: "10px",
+                    }}
+                  />
+                </div>
+              )}
+              <button
+                className="green-button"
+                type="submit"
+                variant="contained"
+                color="primary"
+              >
                 Créer l'utilisateur
-              </Button>
+              </button>
             </form>
           )}
         </div>
@@ -234,9 +269,15 @@ class AdminPanel extends Component {
             <tbody>
               {users.map((user) => (
                 <tr key={user.email}>
-                  <td><b>{user.email}</b></td>
-                  <td><b>{user.role}</b></td>
-                  <td><b>{this.formatDate(user.created_At)}</b></td>
+                  <td>
+                    <b>{user.email}</b>
+                  </td>
+                  <td>
+                    <b>{user.role}</b>
+                  </td>
+                  <td>
+                    <b>{this.formatDate(user.created_At)}</b>
+                  </td>
                   <td>
                     <button
                       className="red-button"
@@ -247,7 +288,7 @@ class AdminPanel extends Component {
                     <button
                       className="blue-button"
                       onClick={() => this.openRoleUpdateModal(user)}
-                      >
+                    >
                       Modifier le rôle
                     </button>
                   </td>
@@ -269,19 +310,17 @@ class AdminPanel extends Component {
           {selectedUserForRoleUpdate && (
             <div>
               <br />
-              <i> <b>{selectedUserForRoleUpdate.email}</b></i> <br />
-              <input
-                type="hidden"
-                value={selectedUserForRoleUpdate.email}
-                />
+              <i>
+                {" "}
+                <b>{selectedUserForRoleUpdate.email}</b>
+              </i>{" "}
+              <br />
+              <input type="hidden" value={selectedUserForRoleUpdate.email} />
               <br />
               <label>Nouveau rôle :</label>
-              <select
-                value={this.state.role} 
-                onChange={this.handleRoleChange}> 
+              <select value={this.state.role} onChange={this.handleRoleChange}>
                 <option value="ADMIN">ADMIN</option>
                 <option value="USER">USER</option>
-                
               </select>
               <br /> <br />
               <button
@@ -293,7 +332,12 @@ class AdminPanel extends Component {
                 Modifier le rôle
               </button>
               <br />
-              <button className="red-button"  onClick={this.closeRoleUpdateModal}>Fermer</button>
+              <button
+                className="red-button"
+                onClick={this.closeRoleUpdateModal}
+              >
+                Fermer
+              </button>
             </div>
           )}
         </Rodal>

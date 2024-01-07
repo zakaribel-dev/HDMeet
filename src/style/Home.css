@@ -1,25 +1,26 @@
-html, body {
-  	height: 100%;
+html,
+body {
+  height: 100%;
 }
 body {
-	margin: 0;
-	text-align: center;
-	background-color: #8EC8F2;
+  margin: 0;
+  text-align: center;
+  background-color: #8ec8f2;
 }
 
 .container2 {
-	padding-top: 30px;
-	margin: auto;
-	align-items: center;
-	justify-content: center;
-	text-align: center;
-
+  padding-top: 30px;
+  margin: auto;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
-.startBtn{
-margin: 20px !important;
-background-color: white  !important;
-color: #8EC8F2  !important;
-font-weight: 700  !important;
+.startBtn {
+  margin: 20px !important;
+  background-color: white !important;
+  color: #8ec8f2 !important;
+  font-weight: 700 !important;
 }
+
 

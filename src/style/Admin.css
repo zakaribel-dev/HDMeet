@@ -27,3 +27,7 @@
     cursor: pointer; 
     margin: 1%;
   }
+
+  tr:hover {
+    background-color: #8EC8F2; 
+}

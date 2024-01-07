@@ -4,32 +4,45 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@material-ui/core";
 import { message } from "antd"; // superbe bibliothèque..
 import logo from '../../assets/hdmlogo.png';
+import bcrypt from "bcryptjs"; // Importez bcryptjs
 
- // J4AI DU FAIRE UN COMPONENT FONCTIONNEL PSK GALERE POUR LA REDIRECTION EN CLASSE  )-:  )-:  )-: 
 const AuthAdmin = () => {
   const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState(""); 
+
   const navigate = useNavigate();
 
   const handleAdminEmailChange = (e) => {
-    setAdminEmail(e.target.value.toLowerCase()); // jpréviens la casse 
+    setAdminEmail(e.target.value.toLowerCase());
+  };
+  const handleAdminPasswordChange = (e) => { 
+    setAdminPassword(e.target.value);
   };
   
   const loginAsAdmin = () => {
-    if (adminEmail === "") {
-      message.warning('merci de remplir ce foutu champ svp..');
+    if (adminEmail === "" || adminPassword === "") { 
+      message.warning('Merci de remplir tous les champs svp.');
       return;
     }
 
     axios.get("http://localhost:4001/users")
       .then((response) => {
-        const isAdmin = response.data.some( // some c'est cool pour eviter de faire une boucle for
-          (user) => user.email === adminEmail && user.role.includes("ADMIN")
-        );
+        const users = response.data;
 
-        if (isAdmin) {
-          navigate("/adminPanel");
+        // si dans response je trouve l'email de l'input qui match avec le role admin alors je stock ça dans "user"
+        const user = users.find((user) => user.email === adminEmail && user.role.includes("ADMIN"));
+
+        if (user) {  
+          // j'utilise bcrypt.js pour comparer le mdp hashé en bdd et l'input password
+          const passwordMatch = bcrypt.compareSync(adminPassword, user.password);
+
+          if (passwordMatch) {
+            navigate("/adminPanel");
+          } else {
+            message.error('Mot de passe incorrect.');
+          }
         } else {
-           message.error('Pas autorisé, allez zou!')
+           message.error('Utilisateur non autorisé.');
         }
       })
       .catch((error) => {
@@ -56,7 +69,15 @@ const AuthAdmin = () => {
         placeholder="Email administrateur"
         onChange={handleAdminEmailChange}
         onKeyDown={handleKeyDown}
-      /><br /><br />
+      /> <br /><br />
+      <input
+        type="password"
+        name="password"
+        placeholder="Mot de passe"
+        onChange={handleAdminPasswordChange}
+        onKeyDown={handleKeyDown}
+      />
+      <br /><br />
       <Button className='startBtn' variant="contained" color="primary" onClick={loginAsAdmin}>
         Se connecter
       </Button>

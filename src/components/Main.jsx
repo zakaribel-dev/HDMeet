@@ -956,7 +956,7 @@ class Main extends Component {
 
             <div className="container" style={{ textAlign: "center" }}>
               <img
-                style={{ width: "80px", borderRadius: "0 0 10px" }}
+                style={{ width: "150px", borderRadius: "0 0 10px" }}
                 className="logoInConf"
                 src={logo}
                 alt=""
