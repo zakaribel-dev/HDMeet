@@ -11,8 +11,9 @@ class Home extends Component {
   }
 
   createRoom = () => {
-    const newRoom = Math.random().toString(36).substring(5, 9);
-    window.location.href = `/${newRoom}`;
+    // jcreer un float random que je passe ensuite en string (base 36) puis ensuite jvais piocher dans cette string random de 3 à 25
+    const newRoom = Math.random().toString(36).substring(3, 25); 
+    window.location.href = `/${newRoom}`; 
   }
 
   render() {
