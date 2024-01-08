@@ -169,7 +169,6 @@ class Main extends Component {
     }
   }
 
-  // CREATE OFFER POUR LE PARTAGE
   getUserMediaSuccess = (stream) => {
     // "stream" contient mon objet MediaStream qui m'est retourné quand l'user a accepté qu'on ait acces à sa cam + micro..
     //(voir plus haut dans getUserMedia)
@@ -205,50 +204,19 @@ class Main extends Component {
         .catch((e) => console.log(e))
     }
 
+
+    // DESACTIVATION CAMERA 
     stream.getTracks().forEach((track) => {
       track.onended = () => {
-        // Lorsque l'une des pistes se termine (comme la vidéo ou l'audio), cette fonction anonyme est exécutée.
-        // Elle réinitialise l'état local et les flux pour une nouvelle connexion.
-        this.setState(
-          {
-            video: false,
-            audio: false,
-          },
-          () => {
-            try {
-              let tracks = this.myVideo.current.srcObject.getTracks()
-              tracks.forEach((track) => track.stop())
-            } catch (e) {
-              console.log(e)
-            }
+        this.setState({
+          video: false,
+          audio: false,
+        }, () => {
 
-            // du coup lorsqu'on désactive la caméra et l'audio,
-            // je lance black et silence qui vont creer un flux noir + supprimer l'audio
-            let blackSilence = () => new MediaStream([this.silence()])
-            window.localStream = blackSilence()
-            this.myVideo.current.srcObject = window.localStream
-
-            // Rétablit la communication avec les autres utilisateurs.
-            for (let id in connections) {
-              connections[id].addStream(window.localStream)
-              connections[id]
-                .createOffer()
-                .then((description) =>
-                  connections[id].setLocalDescription(description)
-                )
-                .then(() => {
-                  socket.emit(
-                    "signal",
-                    id,
-                    JSON.stringify({ sdp: connections[id].localDescription })
-                  )
-                })
-                .catch((e) => console.log(e))
-            }
-          }
-        )
-      }
-    })
+          this.getUserMedia();
+        });
+      };
+    });
   }
 
   // partage d'ecran
@@ -267,7 +235,7 @@ class Main extends Component {
 
   screenShareGranted = (stream) => {
     try {
-      //j'arrete de diffuser le stream de l'user qui souhaite partager son écran
+      //j'arrete de diffuser le stream video de l'user qui souhaite partager son écran à la place
       window.localStream.getTracks().forEach((track) => track.stop())
     } catch (e) {
       console.log(e)
@@ -307,31 +275,16 @@ class Main extends Component {
       this.requestFullScreen(videoElement)
     }
 
-    stream.getTracks().forEach(
-      (track) =>
-        (track.onended = () => {
-          this.setState(
-            {
-              screen: false,
-            },
-            () => {
-              try {
-                let tracks = this.myVideo.current.srcObject.getTracks()
-                tracks.forEach((track) => track.stop())
-              } catch (e) {
-                console.log(e)
-              }
-
-              let blackSilence = () =>
-                new MediaStream([this.black(), this.silence()])
-              window.localStream = blackSilence()
-              this.myVideo.current.srcObject = window.localStream
-
-              this.getUserMedia()
-            }
-          )
-        })
-    )
+    stream.getTracks().forEach((track) => {
+      track.onended = () => {
+        this.setState({
+          screen: false,
+        }, () => {
+          
+          this.getUserMedia();
+        });
+      };
+    });
   }
 
   // ici je vais réceptionner tout ce qui est SDP/iceCandidates
@@ -654,7 +607,7 @@ class Main extends Component {
           }
 
           if (!window.localStream) {
-            window.localStream = new MediaStream([this.black(), this.silence()])
+            window.localStream = new MediaStream([this.silence()])
           }
 
           connections[socketListId].addStream(window.localStream)
@@ -721,16 +674,6 @@ class Main extends Component {
     oscillator.start()
     ctx.resume()
     return Object.assign(dst.stream.getAudioTracks()[0], { enabled: false })
-  }
-
-  black = ({ width = 640, height = 480 } = {}) => {
-    let canvas = Object.assign(document.createElement("canvas"), {
-      width,
-      height,
-    })
-    canvas.getContext("2d").fillRect(0, 0, width, height)
-    let stream = canvas.captureStream()
-    return Object.assign(stream.getVideoTracks()[0], { enabled: false })
   }
 
   // pourquoi !this.state ??? bah parce que ça permute de false à true (clique et reclique) tu comprends mon gars?
