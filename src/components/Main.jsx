@@ -1,3 +1,4 @@
+/* eslint-disable no-lone-blocks */
 /* eslint-disable no-loop-func */
 import React, { Component } from "react"
 import io from "socket.io-client"
@@ -77,6 +78,8 @@ class Main extends Component {
       currentUserEmail: "",
       isAdmin: false,
       loadingCamera: true,
+      isSpeakingStates: {},
+
     }
     connections = {}
 
@@ -94,6 +97,11 @@ class Main extends Component {
 
     this.getPermissions()
   }
+
+
+
+
+
 
   toggleSidebar = () => {
     this.setState((prevState) => ({
@@ -204,20 +212,82 @@ class Main extends Component {
         .catch((e) => console.log(e))
     }
 
-
-    // DESACTIVATION CAMERA 
+    // DESACTIVATION CAMERA
     stream.getTracks().forEach((track) => {
       track.onended = () => {
-        this.setState({
-          video: false,
-          audio: false,
-        }, () => {
-
-          this.getUserMedia();
-        });
-      };
-    });
+        this.setState(
+          {
+            video: false,
+            audio: false,
+          },
+          () => {
+            this.getUserMedia()
+          }
+        )
+      }
+    })
   }
+
+  updateSpeakingState = (userId, speaking) => {
+    const isSpeakingStates = { ...this.state.isSpeakingStates };
+    isSpeakingStates[userId] = speaking;
+    this.setState({ isSpeakingStates });
+  
+    // Mettre à jour l'affichage visuel
+    this.updateSpeakingVisual(userId, speaking);
+  };
+
+
+  updateSpeakingVisual = (userId, speaking) => {
+    const videoElement = document.querySelector(`[data-socket="${userId}"]`);
+    if (videoElement) {
+      videoElement.classList.toggle("speaking", speaking);
+    }
+  };
+
+  setupAudioAnalyser(stream, socketId) {
+    // Vérifier si le flux contient des pistes audio
+    const audioTracks = stream.getAudioTracks();
+    if (audioTracks.length === 0) {
+      console.error("Le flux de médias ne contient pas de piste audio.");
+      return; // Sortir de la fonction si aucune piste audio n'est présente
+    }
+  
+    try {
+      // Création de l'AudioContext et de la source du flux
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const mediaStreamSource = audioContext.createMediaStreamSource(stream);
+  
+      // Configuration de l'analyseur
+      const analyser = audioContext.createAnalyser();
+      mediaStreamSource.connect(analyser);
+  
+      analyser.fftSize = 512;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+  
+      const speakingThreshold = 0.5;  // Seuil de détection de la parole
+  
+      const analyze = () => {
+        analyser.getByteFrequencyData(dataArray);
+        let sum = dataArray.reduce((a, b) => a + b, 0);
+        let average = sum / bufferLength;
+  
+        let isSpeaking = average > speakingThreshold;
+        if (this.state.isSpeakingStates[socketId] !== isSpeaking) {
+          this.updateSpeakingState(socketId, isSpeaking);
+          socket.emit("user-speaking", { speaking: isSpeaking, userId: socketId });
+        }
+  
+        requestAnimationFrame(analyze);
+      };
+  
+      analyze();
+    } catch (error) {
+      console.error("Erreur lors de la configuration de l'analyseur audio:", error);
+    }
+  }
+  
 
   // partage d'ecran
   screenSharePermission = () => {
@@ -277,19 +347,27 @@ class Main extends Component {
 
     stream.getTracks().forEach((track) => {
       track.onended = () => {
-        this.setState({
-          screen: false,
-        }, () => {
-          
-          this.getUserMedia();
-        });
-      };
-    });
+        this.setState(
+          {
+            screen: false,
+          },
+          () => {
+            this.getUserMedia()
+          }
+        )
+      }
+    })
   }
 
   // ici je vais réceptionner tout ce qui est SDP/iceCandidates
   signalFromServer = (fromId, body) => {
     let signal = JSON.parse(body)
+
+
+    if (signal.speaking !== undefined) {
+      this.updateSpeakingState(fromId, signal.speaking);
+    }
+
 
     if (fromId !== socketId) {
       //jmassure que l'id du client (fromId) est différent du mien (socketId)
@@ -484,6 +562,8 @@ class Main extends Component {
       )
       socketId = socket.id
 
+      
+
       socket.on("update-user-list", (users) => {
         if (users) {
           // si j'fais pas ça il va mdire undefined blablabla
@@ -523,6 +603,12 @@ class Main extends Component {
         }
       })
 
+    socket.on("user-speaking", (data) => {
+  const { speaking, userId } = data;
+  this.updateSpeakingState(userId, speaking);
+});
+
+
       socket.on("user-joined", (id, clients, username, email) => {
         if (id !== socketId) {
           this.playUserConnectedSound()
@@ -534,6 +620,15 @@ class Main extends Component {
           // si l'id qui vient d'arriver ne correspond pas à mon socketId (moi) alors je play le sound de cette maniere,
           //seul les utilisateurs déjà présents dans la room entendront le son si un new user arrive dans la room
         }
+
+        
+        const isSpeakingStates = { ...this.state.isSpeakingStates };
+
+        if (id !== socketId) {
+          isSpeakingStates[id] = false; // Initialise l'état de parole à false pour le nouvel utilisateur
+        }
+      
+        this.setState({ isSpeakingStates });
 
         this.setState((prevState) => ({
           usernames: {
@@ -552,6 +647,7 @@ class Main extends Component {
           ) //stockage des sockets id dans ma globale "connections",
           // c'est ici que j'initialise la connection P2P avec webRTC
 
+       
           // je collecte mes iceCandidates
           connections[socketListId].onicecandidate = function (event) {
             if (event.candidate != null) {
@@ -562,7 +658,7 @@ class Main extends Component {
               )
             }
           }
-
+   
           // je check si un nouveau user (nouveau videoElement du coup) arrive dans la room
           connections[socketListId].onaddstream = (event) => {
             // c un event de webRTC go voir : https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addstream_event
@@ -571,14 +667,13 @@ class Main extends Component {
               `[data-socket="${socketListId}"]`
             )
 
-            if (searchVideo !== null) {
-              // si j'fais pas cette condition ça montre un carré vide donc laissez please
-              searchVideo.srcObject = event.stream
-            } else {
+
+            if (searchVideo === null) {              
               videoElements = clients.length // videoElements = nbr de client connectés à la  room..
               console.log("videoElements: ", videoElements) // test adaptCSS
               let main = document.getElementById("main")
               let cssMesure = this.adaptCSS(main)
+
 
               let video = document.createElement("video")
 
@@ -590,7 +685,7 @@ class Main extends Component {
                 borderStyle: "solid",
                 borderColor: "#bdbdbd",
                 objectFit: "fill",
-                backgroundColor:'black'
+                backgroundColor: "black",
               }
               for (let i in css) video.style[i] = css[i]
 
@@ -602,12 +697,18 @@ class Main extends Component {
               video.autoplay = true
               video.playsinline = true
               video.onclick = this.handleVideoClick
+              const videoId = "video_" + socketListId;
+              video.setAttribute("id", videoId);
               main.appendChild(video)
-            }
-          }
+        
+              this.setupAudioAnalyser(event.stream, socketListId); 
 
-          if (!window.localStream) {
-            window.localStream = new MediaStream([this.silence()])
+            }else{
+              searchVideo.srcObject = event.stream;
+
+            }
+
+
           }
 
           connections[socketListId].addStream(window.localStream)
@@ -661,19 +762,6 @@ class Main extends Component {
       //full screen api compatibilité edge
       videoElement.msRequestFullscreen()
     }
-  }
-
-  // concernant silence et black -> vas dont check : https://blog.mozilla.org/webrtc/warm-up-with-replacetrack/
-  // pourquoi creer un "silence" ? parce qu'en webRTC j'ai besoin de creer un flux silence en CONTINU
-  // le cas où j'utilise "silence" c'est le cas où je clique sur le bouton mute.
-  // l'user veut certes qu'on l'entende plus mais le flux audio doit quand meme continuer donc je creer un silence.
-  silence = () => {
-    let ctx = new AudioContext()
-    let oscillator = ctx.createOscillator()
-    let dst = oscillator.connect(ctx.createMediaStreamDestination())
-    oscillator.start()
-    ctx.resume()
-    return Object.assign(dst.stream.getAudioTracks()[0], { enabled: false })
   }
 
   // pourquoi !this.state ??? bah parce que ça permute de false à true (clique et reclique) tu comprends mon gars?
@@ -738,8 +826,10 @@ class Main extends Component {
     if (isAuthorized) {
       this.connect()
     } else {
-      message.error("Hop hop hop, vous n'êtes pas autorisé à entrer ici, allez zou!")
-   }
+      message.error(
+        "Hop hop hop, vous n'êtes pas autorisé à entrer ici, allez zou!"
+      )
+    }
   }
 
   sendMessage = () => {
@@ -775,10 +865,21 @@ class Main extends Component {
                 </Flex>
               </div>
             )}
-         <Link to="/">
-          <img className='logo' src={logo} alt="" style={{width:"150px", position:'absolute',top: '0',left:'0'}} />
-          </Link>
-          <br /><br />
+            <Link to="/">
+              <img
+                className="logo"
+                src={logo}
+                alt=""
+                style={{
+                  width: "150px",
+                  position: "absolute",
+                  top: "0",
+                  left: "0",
+                }}
+              />
+            </Link>
+            <br />
+            <br />
             <div className="askUsername">
               <form onSubmit={this.handleSubmit}>
                 <input
@@ -788,18 +889,26 @@ class Main extends Component {
                   autoComplete="email"
                   onChange={(e) => this.handleEmail(e)}
                   required
-                  style={{backgroundColor:'white', borderRadius:'5px', margin:'10px'}}
-                  />
+                  style={{
+                    backgroundColor: "white",
+                    borderRadius: "5px",
+                    margin: "10px",
+                  }}
+                />
                 <input
                   placeholder="Nom d'utilisateur"
                   type="text"
                   name="text"
                   onChange={(e) => this.handleUsername(e)}
                   required
-                  style={{backgroundColor:'white', borderRadius:'5px', margin:'10px'}}
+                  style={{
+                    backgroundColor: "white",
+                    borderRadius: "5px",
+                    margin: "10px",
+                  }}
                 />
                 <Button
-                  className='startBtn'
+                  className="startBtn"
                   type="submit"
                   variant="contained"
                   color="primary"
@@ -931,7 +1040,7 @@ class Main extends Component {
                     width: "550px",
                     height: "500px",
                     borderRadius: "25px",
-                    backgroundColor:'black'
+                    backgroundColor: "black",
                   }}
                   onClick={this.handleVideoClick}
                 ></video>

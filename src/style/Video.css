@@ -153,6 +153,10 @@ font-weight: 600  !important;
     animation-duration: 300ms !important;
 }
 
+/* Styles pour l'état de parole */
+video[data-socket].speaking {
+  border: 5px solid green !important;
+}
 
 .bodyRodal{
   overflow: "auto" !important;

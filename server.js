@@ -75,6 +75,10 @@ io.on('connection', (socket) => {
 		socket.broadcast.emit('speech-requested', { username });
 	});
 
+	socket.on('user-speaking', (data) => {
+		socket.broadcast.emit('user-speaking', data);
+	  });
+	  
 	socket.on('signal', (toId, message) => { // message contient le SDP généré avec createOffer coté front
 		io.to(toId).emit('signal', socket.id, message) // on va emmetre le signal d'un socketId  vers les autres sockets
 	})
