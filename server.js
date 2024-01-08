@@ -197,7 +197,9 @@ app.put('/updateRoles', (req, res) => {
 			console.log( "newPassword "+ newPassword)	
 			console.log("queryParams " + queryParams)
 			console.log('query ' + query)
-		// je peux execute la query avec ma query concaténée   ( "[...queryParams, email]"  je fusionnne les elements de queryParams avec email pour en faire un novel array )
+			
+			// à ce stade j'ai  query qui est egal à UPDATE users set role = ? (ce sera newRole) ensuite je concatene ', pasword ?' (ce sera hashedPass)
+			// pareil pour email à la fin de la query. C'est pour ça que l'ordre est important dans queryParams
 		connection.query(query + ' WHERE email = ?', queryParams , (err, results) => {
 		  if (err) {
 			console.error('Erreur lors de la mise à jour du rôle et du mot de passe de l\'utilisateur :', err);
