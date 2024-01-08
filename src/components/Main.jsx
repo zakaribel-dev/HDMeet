@@ -99,10 +99,6 @@ class Main extends Component {
   }
 
 
-
-
-
-
   toggleSidebar = () => {
     this.setState((prevState) => ({
       isSidebarOpen: !prevState.isSidebarOpen,
@@ -155,6 +151,8 @@ class Main extends Component {
   }
 
   getUserMedia = () => {
+    console.log("Appel de getUserMedia", { video: this.state.video, audio: this.state.audio });
+
     if (
       (this.state.video && this.videoAvailable) ||
       (this.state.audio && this.audioAvailable)
@@ -178,13 +176,15 @@ class Main extends Component {
   }
 
   getUserMediaSuccess = (stream) => {
+    console.log("Flux de médias récupéré dans getUserMediaSuccess", stream);
+
     // "stream" contient mon objet MediaStream qui m'est retourné quand l'user a accepté qu'on ait acces à sa cam + micro..
     //(voir plus haut dans getUserMedia)
-
     // Met à jour le flux local avec le nouveau flux de la caméra/microphone.
     window.localStream = stream
     this.myVideo.current.srcObject = stream
-
+    this.setupAudioAnalyser(stream, socketId);
+    
     // ici je boucle dans toute les connexions actuelles..
     for (let id in connections) {
       if (id === socketId) continue // la jdis que si dans la liste des sockets ya une id qui correspond à MA socketId(moi)
@@ -246,6 +246,8 @@ class Main extends Component {
   };
 
   setupAudioAnalyser(stream, socketId) {
+    console.log(`Configuration de l'analyseur audio pour l'utilisateur ${socketId}`);
+
     // Vérifier si le flux contient des pistes audio
     const audioTracks = stream.getAudioTracks();
     if (audioTracks.length === 0) {
@@ -274,7 +276,7 @@ class Main extends Component {
         let average = sum / bufferLength;
   
         let isSpeaking = average > speakingThreshold;
-        if (this.state.isSpeakingStates[socketId] !== isSpeaking) {
+        if (this.state.isSpeakingStates[socketId] !== isSpeaking) { 
           this.updateSpeakingState(socketId, isSpeaking);
           socket.emit("user-speaking", { speaking: isSpeaking, userId: socketId });
         }
@@ -610,6 +612,8 @@ class Main extends Component {
 
 
       socket.on("user-joined", (id, clients, username, email) => {
+        console.log(`Utilisateur rejoint: ${username}, ID: ${id}`);
+
         if (id !== socketId) {
           this.playUserConnectedSound()
           message.success({
@@ -622,14 +626,15 @@ class Main extends Component {
         }
 
         
-        const isSpeakingStates = { ...this.state.isSpeakingStates };
+        const isSpeakingStates = { ...this.state.isSpeakingStates }; // clone de isSpeakingStates
 
-        if (id !== socketId) {
-          isSpeakingStates[id] = false; // Initialise l'état de parole à false pour le nouvel utilisateur
+        if (id !== socketId) { // si user (pas moi)
+          isSpeakingStates[id] = false; // Initialise l'état de parole à false pour le nouvel user
         }
-      
-        this.setState({ isSpeakingStates });
+        this.setState({ isSpeakingStates }); // le isSpeakingStates d'origine prendra la valeur de la copie traitée dans ma condition plus haut 
 
+
+        
         this.setState((prevState) => ({
           usernames: {
             ...prevState.usernames,
@@ -667,7 +672,6 @@ class Main extends Component {
               `[data-socket="${socketListId}"]`
             )
 
-
             if (searchVideo === null) {              
               videoElements = clients.length // videoElements = nbr de client connectés à la  room..
               console.log("videoElements: ", videoElements) // test adaptCSS
@@ -701,7 +705,6 @@ class Main extends Component {
               video.setAttribute("id", videoId);
               main.appendChild(video)
         
-              this.setupAudioAnalyser(event.stream, socketListId); 
 
             }else{
               searchVideo.srcObject = event.stream;
@@ -768,8 +771,14 @@ class Main extends Component {
   // un peu comme prevState en composant fonction capiche ?
   handleVideo = () =>
     this.setState({ video: !this.state.video }, () => this.getUserMedia())
-  handleAudio = () =>
-    this.setState({ audio: !this.state.audio }, () => this.getUserMedia())
+    handleAudio = () => {
+      console.log(`État actuel du micro avant mute/unmute: ${this.state.audio}`);
+      this.setState({ audio: !this.state.audio }, () => {
+        console.log(`État du micro après mute/unmute: ${this.state.audio}`);
+        this.getUserMedia();
+      });
+    };
+    
   handleScreen = () =>
     this.setState({ screen: !this.state.screen }, () =>
       this.screenSharePermission()
