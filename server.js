@@ -198,7 +198,7 @@ app.put('/updateRoles', (req, res) => {
 			console.log("queryParams " + queryParams)
 			console.log('query ' + query)
 		// je peux execute la query avec ma query concaténée   ( "[...queryParams, email]"  je fusionnne les elements de queryParams avec email pour en faire un novel array )
-		connection.query(query + ' WHERE email = ?', [...queryParams], (err, results) => {
+		connection.query(query + ' WHERE email = ?', queryParams , (err, results) => {
 		  if (err) {
 			console.error('Erreur lors de la mise à jour du rôle et du mot de passe de l\'utilisateur :', err);
 			return res.status(500).json({ error: 'Erreur lors de la mise à jour du rôle et du mot de passe de l\'utilisateur.' });
