@@ -80,11 +80,11 @@ io.on('connection', (socket) => {
 	  });
 	  
 	socket.on('signal', (toId, message) => { // message contient le SDP généré avec createOffer coté front
-		io.to(toId).emit('signal', socket.id, message) // on va emmetre le signal d'un socketId  vers les autres sockets
+		io.to(toId).emit('signal', socket.id, message) // j'emit le signal du socket.id (moi)  vers les autres sockets
 	})
 
 	socket.on('chat-message', (data, sender) => {
-		data = sanitizeString(data);// on rend safe (faille xss)
+		data = sanitizeString(data);// on rend safe vs failles xss
 		sender = sanitizeString(sender); // idem
 
 		for (const key in connections) {
