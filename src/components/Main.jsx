@@ -4,6 +4,7 @@ import React, { Component } from "react"
 import io from "socket.io-client"
 import { Input, Button } from "@material-ui/core"
 import logo from "../assets/hdmlogo.png"
+import backgroundBlck from "../assets/blckdef.png"
 import userConnectedSound from "../assets/user_connected.mp3"
 import userDisconnectedSound from "../assets/disconnected.mp3"
 import messageSound from "../assets/message_sound.mp3"
@@ -689,10 +690,14 @@ class Main extends Component {
                 borderStyle: "solid",
                 borderColor: "#bdbdbd",
                 objectFit: "fill",
-                backgroundColor: "black",
-              }
+                backgroundImage: `url(${backgroundBlck})`,
+                backgroundSize: 'cover', 
+                backgroundPosition: 'center', 
+                backgroundRepeat: 'no-repeat' 
+              };
+            
               for (let i in css) video.style[i] = css[i]
-
+            
               video.style.setProperty("width", cssMesure.width)
               video.style.setProperty("height", cssMesure.height)
               video.setAttribute("data-socket", socketListId)

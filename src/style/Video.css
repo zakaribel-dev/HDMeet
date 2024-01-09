@@ -19,6 +19,12 @@
 .video-container {
   position: relative;
 }
+#my-video {
+  background-image: url("../assets/blckdef.png");
+  background-size: cover; 
+  background-position: center; 
+  background-repeat: no-repeat; 
+}
 
 .user-table {
   margin-top: 1%;
