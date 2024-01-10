@@ -66,6 +66,7 @@ class Main extends Component {
       messages: [],
       message: "",
       newmessages: 0,
+      showChat: true,
       askForUsername: true,
       username: "",
       usernames: {},
@@ -80,8 +81,9 @@ class Main extends Component {
       isAdmin: false,
       loadingCamera: true,
       isSpeakingStates: {},
-
+      
     }
+
     connections = {}
 
     axios
@@ -99,13 +101,17 @@ class Main extends Component {
     this.getPermissions()
   }
 
-
   toggleSidebar = () => {
     this.setState((prevState) => ({
       isSidebarOpen: !prevState.isSidebarOpen,
     }))
   }
 
+  toggleChat = () => {
+    this.setState(prevState => ({
+        showChat: !prevState.showChat
+    }));
+};
   getPermissions = async () => {
     try {
       const videoStream = await navigator.mediaDevices.getUserMedia({
@@ -152,7 +158,10 @@ class Main extends Component {
   }
 
   getUserMedia = () => {
-    console.log("Appel de getUserMedia", { video: this.state.video, audio: this.state.audio });
+    console.log("Appel de getUserMedia", {
+      video: this.state.video,
+      audio: this.state.audio,
+    })
 
     if (
       (this.state.video && this.videoAvailable) ||
@@ -177,15 +186,15 @@ class Main extends Component {
   }
 
   getUserMediaSuccess = (stream) => {
-    console.log("Flux de médias récupéré dans getUserMediaSuccess", stream);
+    console.log("Flux de médias récupéré dans getUserMediaSuccess", stream)
 
     // "stream" contient mon objet MediaStream qui m'est retourné quand l'user a accepté qu'on ait acces à sa cam + micro..
     //(voir plus haut dans getUserMedia)
     // Met à jour le flux local avec le nouveau flux de la caméra/microphone.
     window.localStream = stream
     this.myVideo.current.srcObject = stream
-    this.setupAudioAnalyser(stream, socketId);
-    
+    this.setupAudioAnalyser(stream, socketId)
+
     // ici je boucle dans toute les connexions actuelles..
     for (let id in connections) {
       if (id === socketId) continue // la jdis que si dans la liste des sockets ya une id qui correspond à MA socketId(moi)
@@ -230,67 +239,73 @@ class Main extends Component {
   }
 
   updateSpeakingState = (userId, speaking) => {
-    const isSpeakingStates = { ...this.state.isSpeakingStates };
-    isSpeakingStates[userId] = speaking;
-    this.setState({ isSpeakingStates });
-  
-    // Mettre à jour l'affichage visuel
-    this.updateSpeakingVisual(userId, speaking);
-  };
+    const isSpeakingStates = { ...this.state.isSpeakingStates }
+    isSpeakingStates[userId] = speaking
+    this.setState({ isSpeakingStates })
 
+    this.updateSpeakingVisual(userId, speaking)
+  }
 
   updateSpeakingVisual = (userId, speaking) => {
-    const videoElement = document.querySelector(`[data-socket="${userId}"]`);
+    const videoElement = document.querySelector(`[data-socket="${userId}"]`)
     if (videoElement) {
-      videoElement.classList.toggle("speaking", speaking);
-    }
-  };
-
-  setupAudioAnalyser(stream, socketId) {
-    console.log(`Configuration de l'analyseur audio pour l'utilisateur ${socketId}`);
-
-    // Vérifier si le flux contient des pistes audio
-    const audioTracks = stream.getAudioTracks();
-    if (audioTracks.length === 0) {
-      console.error("Le flux de médias ne contient pas de piste audio.");
-      return; // Sortir de la fonction si aucune piste audio n'est présente
-    }
-  
-    try {
-      // Création de l'AudioContext et de la source du flux
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const mediaStreamSource = audioContext.createMediaStreamSource(stream);
-  
-      // Configuration de l'analyseur
-      const analyser = audioContext.createAnalyser();
-      mediaStreamSource.connect(analyser);
-  
-      analyser.fftSize = 512;
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-  
-      const speakingThreshold = 0.5;  // Seuil de détection de la parole
-  
-      const analyze = () => {
-        analyser.getByteFrequencyData(dataArray);
-        let sum = dataArray.reduce((a, b) => a + b, 0);
-        let average = sum / bufferLength;
-  
-        let isSpeaking = average > speakingThreshold;
-        if (this.state.isSpeakingStates[socketId] !== isSpeaking) { 
-          this.updateSpeakingState(socketId, isSpeaking);
-          socket.emit("user-speaking", { speaking: isSpeaking, userId: socketId });
-        }
-  
-        requestAnimationFrame(analyze);
-      };
-  
-      analyze();
-    } catch (error) {
-      console.error("Erreur lors de la configuration de l'analyseur audio:", error);
+      videoElement.classList.toggle("speaking", speaking)
     }
   }
-  
+
+  setupAudioAnalyser(stream, socketId) {
+    console.log(
+      `Configuration de l'analyseur audio pour l'utilisateur ${socketId}`
+    )
+
+    // Vérifier si le flux contient des pistes audio
+    const audioTracks = stream.getAudioTracks()
+    if (audioTracks.length === 0) {
+      console.error("Le flux de médias ne contient pas de piste audio.")
+      return
+    }
+
+    try {
+      // Création de l'AudioContext et de la source du flux
+      const audioContext = new (window.AudioContext ||
+        window.webkitAudioContext)()
+      const mediaStreamSource = audioContext.createMediaStreamSource(stream)
+
+      // Configuration de l'analyseur
+      const analyser = audioContext.createAnalyser()
+      mediaStreamSource.connect(analyser)
+
+      analyser.fftSize = 512
+      const bufferLength = analyser.frequencyBinCount
+      const dataArray = new Uint8Array(bufferLength)
+
+      const speakingThreshold = 0.5 // Seuil de détection de la parole
+
+      const analyze = () => {
+        analyser.getByteFrequencyData(dataArray)
+        let sum = dataArray.reduce((a, b) => a + b, 0)
+        let average = sum / bufferLength
+
+        let isSpeaking = average > speakingThreshold
+        if (this.state.isSpeakingStates[socketId] !== isSpeaking) {
+          this.updateSpeakingState(socketId, isSpeaking)
+          socket.emit("user-speaking", {
+            speaking: isSpeaking,
+            userId: socketId,
+          })
+        }
+
+        requestAnimationFrame(analyze)
+      }
+
+      analyze()
+    } catch (error) {
+      console.error(
+        "Erreur lors de la configuration de l'analyseur audio:",
+        error
+      )
+    }
+  }
 
   // partage d'ecran
   screenSharePermission = () => {
@@ -366,11 +381,9 @@ class Main extends Component {
   signalFromServer = (fromId, body) => {
     let signal = JSON.parse(body)
 
-
     if (signal.speaking !== undefined) {
-      this.updateSpeakingState(fromId, signal.speaking);
+      this.updateSpeakingState(fromId, signal.speaking)
     }
-
 
     if (fromId !== socketId) {
       //jmassure que l'id du client (fromId) est différent du mien (socketId)
@@ -565,8 +578,6 @@ class Main extends Component {
       )
       socketId = socket.id
 
-      
-
       socket.on("update-user-list", (users) => {
         if (users) {
           // si j'fais pas ça il va mdire undefined blablabla
@@ -606,14 +617,13 @@ class Main extends Component {
         }
       })
 
-    socket.on("user-speaking", (data) => {
-  const { speaking, userId } = data;
-  this.updateSpeakingState(userId, speaking);
-});
-
+      socket.on("user-speaking", (data) => {
+        const { speaking, userId } = data
+        this.updateSpeakingState(userId, speaking)
+      })
 
       socket.on("user-joined", (id, clients, username, email) => {
-        console.log(`Utilisateur rejoint: ${username}, ID: ${id}`);
+        console.log(`Utilisateur rejoint: ${username}, ID: ${id}`)
 
         if (id !== socketId) {
           this.playUserConnectedSound()
@@ -626,16 +636,14 @@ class Main extends Component {
           //seul les utilisateurs déjà présents dans la room entendront le son si un new user arrive dans la room
         }
 
-        
-        const isSpeakingStates = { ...this.state.isSpeakingStates }; // clone de isSpeakingStates
+        const isSpeakingStates = { ...this.state.isSpeakingStates } // clone de isSpeakingStates
 
-        if (id !== socketId) { // si user (pas moi)
-          isSpeakingStates[id] = false; // Initialise l'état de parole à false pour le nouvel user
+        if (id !== socketId) {
+          // si user (pas moi)
+          isSpeakingStates[id] = false // Initialise l'état de parole à false pour le nouvel user
         }
-        this.setState({ isSpeakingStates }); // le isSpeakingStates d'origine prendra la valeur de la copie traitée dans ma condition plus haut 
+        this.setState({ isSpeakingStates }) // le isSpeakingStates d'origine prendra la valeur de la copie traitée dans ma condition plus haut
 
-
-        
         this.setState((prevState) => ({
           usernames: {
             ...prevState.usernames,
@@ -653,7 +661,6 @@ class Main extends Component {
           ) //stockage des sockets id dans ma globale "connections",
           // c'est ici que j'initialise la connection P2P avec webRTC
 
-       
           // je collecte mes iceCandidates
           connections[socketListId].onicecandidate = function (event) {
             if (event.candidate != null) {
@@ -664,7 +671,7 @@ class Main extends Component {
               )
             }
           }
-   
+
           // je check si un nouveau user (nouveau videoElement du coup) arrive dans la room
           connections[socketListId].onaddstream = (event) => {
             // c un event de webRTC go voir : https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addstream_event
@@ -673,12 +680,11 @@ class Main extends Component {
               `[data-socket="${socketListId}"]`
             )
 
-            if (searchVideo === null) {              
+            if (searchVideo === null) {
               videoElements = clients.length // videoElements = nbr de client connectés à la  room..
               console.log("videoElements: ", videoElements) // test adaptCSS
               let main = document.getElementById("main")
               let cssMesure = this.adaptCSS(main)
-
 
               let video = document.createElement("video")
 
@@ -691,13 +697,13 @@ class Main extends Component {
                 borderColor: "#bdbdbd",
                 objectFit: "fill",
                 backgroundImage: `url(${backgroundBlck})`,
-                backgroundSize: 'cover', 
-                backgroundPosition: 'center', 
-                backgroundRepeat: 'no-repeat' 
-              };
-            
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+              }
+
               for (let i in css) video.style[i] = css[i]
-            
+
               video.style.setProperty("width", cssMesure.width)
               video.style.setProperty("height", cssMesure.height)
               video.setAttribute("data-socket", socketListId)
@@ -706,17 +712,12 @@ class Main extends Component {
               video.autoplay = true
               video.playsinline = true
               video.onclick = this.handleVideoClick
-              const videoId = "video_" + socketListId;
-              video.setAttribute("id", videoId);
+              const videoId = "video_" + socketListId
+              video.setAttribute("id", videoId)
               main.appendChild(video)
-        
-
-            }else{
-              searchVideo.srcObject = event.stream;
-
+            } else {
+              searchVideo.srcObject = event.stream
             }
-
-
           }
 
           connections[socketListId].addStream(window.localStream)
@@ -776,14 +777,14 @@ class Main extends Component {
   // un peu comme prevState en composant fonction capiche ?
   handleVideo = () =>
     this.setState({ video: !this.state.video }, () => this.getUserMedia())
-    handleAudio = () => {
-      console.log(`État actuel du micro avant mute/unmute: ${this.state.audio}`);
-      this.setState({ audio: !this.state.audio }, () => {
-        console.log(`État du micro après mute/unmute: ${this.state.audio}`);
-        this.getUserMedia();
-      });
-    };
-    
+  handleAudio = () => {
+    console.log(`État actuel du micro avant mute/unmute: ${this.state.audio}`)
+    this.setState({ audio: !this.state.audio }, () => {
+      console.log(`État du micro après mute/unmute: ${this.state.audio}`)
+      this.getUserMedia()
+    })
+  }
+
   handleScreen = () =>
     this.setState({ screen: !this.state.screen }, () =>
       this.screenSharePermission()
@@ -967,58 +968,7 @@ class Main extends Component {
               onRequestSpeech={this.handleRequestSpeech}
             />
             {/* je "hide" la modal si showModal est faux( c le cas par défaut of course*/}
-            <Rodal visible={this.state.showModal} onClose={this.closeChat} customStyles={{borderRadius:'25px'}}>
-              <header>
-                <img
-                  style={{ width: "80px", borderRadius: "10px" }}
-                  src={logo}
-                  alt=""
-                />
-                <br />
-                <br />
-              </header>
-
-              <div className="bodyRodal">
-                {/* Messages */}
-                {this.state.messages.length > 0 ? (
-                  this.state.messages.map((item, index) => (
-                    <div key={index}>
-                      <p style={{ wordBreak: "break-all" }}>
-                        <b>{item.sender}</b>: {item.data}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <p style={{ textAlign: "center" }}>
-                    Pas encore de message ici...
-                  </p>
-                )}
-              </div>
-
-              <footer className="div-send-msg" style={{ textAlign: "center" }}>
-                {/* Message input */}
-                <Input
-                  className="inputMsg"
-                  placeholder="Message"
-                  value={this.state.message}
-                  onChange={(e) => this.handleMessage(e)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && this.state.message.trim()) {
-                      this.sendMessage()
-                    }
-                  }}
-                />
-                {/* Send button */}
-                <Button
-                  className="btnSendMsg"
-                  variant="contained"
-                  color="primary"
-                  onClick={this.sendMessage}
-                >
-                  Envoyer
-                </Button>
-              </footer>
-            </Rodal>
+  
 
             <div className="container" style={{ textAlign: "center" }}>
               <img
@@ -1065,6 +1015,12 @@ class Main extends Component {
                   usernames={this.state.usernames}
                   isSidebarOpen={this.state.isSidebarOpen}
                   toggleSidebar={this.toggleSidebar}
+                  toggleChat={this.toggleChat}
+                  showChat={this.state.showChat}
+                  messages={this.state.messages}
+                  message={this.state.message} 
+                  handleMessage={this.handleMessage}
+                  sendMessage={this.sendMessage}
                 />
               </div>
             </div>

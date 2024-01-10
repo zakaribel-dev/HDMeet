@@ -191,17 +191,6 @@ video[data-socket].speaking {
   font-weight: 600  !important;
 }
 
-.sidebar {
-  width: 250px;
-  position: fixed;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  background-color: #f3f3f3;
-  border-left: 1px solid #ccc;
-  padding: 15px;
-  overflow-y: auto;
-}
 
 .video-chat-container {
   padding-right: 250px; 
@@ -211,16 +200,16 @@ video[data-socket].speaking {
   padding: 0 !important;
 }
 
+.sidebar.open{
+  width: 350px !important;
+}
 
 .sidebar {
-  width: 250px;
   position: fixed;
   right: -250px;
   top: 0;
   bottom: 0;
-  background-color: #f3f3f3;
   border-left: 1px solid #ccc;
-  padding: 15px;
   overflow-y: auto;
   transition: right 0.3s; 
 }

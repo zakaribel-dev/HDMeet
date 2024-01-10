@@ -57,19 +57,6 @@ class ControlBar extends Component {
           </IconButton> 
         )}
 
-        <Badge
-          className="custom-badge"
-          overlap="rectangular"
-          badgeContent={newMessagesCount}
-          max={999}
-          color="secondary"
-          onClick={onOpenChat}
-        >
-          <IconButton style={{ color: "rgb(20, 20, 61)" }} onClick={onOpenChat}>
-            <ChatIcon />
-          </IconButton>
-        </Badge>
-
         <Button
           className={`toggle-button ${
             !isSidebarOpen ? "button-show" : ""
