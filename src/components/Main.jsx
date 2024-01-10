@@ -967,7 +967,7 @@ class Main extends Component {
               onRequestSpeech={this.handleRequestSpeech}
             />
             {/* je "hide" la modal si showModal est faux( c le cas par défaut of course*/}
-            <Rodal visible={this.state.showModal} onClose={this.closeChat}>
+            <Rodal visible={this.state.showModal} onClose={this.closeChat} customStyles={{borderRadius:'25px'}}>
               <header>
                 <img
                   style={{ width: "80px", borderRadius: "10px" }}
