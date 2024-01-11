@@ -82,7 +82,6 @@ class Main extends Component {
       isSpeakingStates: {},
 
     }
-    connections = {}
 
     axios
       .get("http://localhost:4001/users")
@@ -486,36 +485,38 @@ class Main extends Component {
   }
 
   adaptCSS(main) {
-    let widthMain = main.offsetWidth
-    let minWidth = "30%"
+    let widthMain = main.offsetWidth;
+    let minWidth = "30%";
     if ((widthMain * 30) / 100 < 300) {
-      minWidth = "300px"
+        minWidth = "300px";
     }
-    let minHeight = "40%"
-    let height = String(100 / videoElements) + "%"
-    let width = ""
+    let minHeight = "40%";
+    let height = String(100 / videoElements) + "%";  // videoElements est le nombre total de vidéos
+    let width = "";
+
     if (videoElements === 0 || videoElements === 1) {
-      width = "450px"
-      height = "500px"
+        width = "450px";
+        height = "500px";
     } else if (videoElements === 2) {
-      width = "35%"
+        width = "35%";
     } else if (videoElements === 3 || videoElements === 4) {
-      width = "30%"
-      height = "50%"
+        width = "30%";
+        height = "50%";
     } else {
-      width = String(100 / videoElements) + "%"
+        width = String(100 / videoElements) + "%";
     }
 
-    let videos = main.querySelectorAll("video")
+    let videos = main.querySelectorAll("video");
     for (let i = 0; i < videos.length; i++) {
-      videos[i].style.minWidth = minWidth
-      videos[i].style.minHeight = minHeight
-      videos[i].style.setProperty("width", width)
-      videos[i].style.setProperty("height", height)
+        videos[i].style.minWidth = minWidth;
+        videos[i].style.minHeight = minHeight;
+        videos[i].style.setProperty("width", width);
+        videos[i].style.setProperty("height", height);
     }
 
-    return { minWidth, minHeight, width, height }
-  }
+    return { minWidth, minHeight, width, height };
+}
+
 
   playUserConnectedSound = () => {
     const audio = new Audio(userConnectedSound)
@@ -564,8 +565,6 @@ class Main extends Component {
         this.state.currentUserEmail
       )
       socketId = socket.id
-
-      
 
       socket.on("update-user-list", (users) => {
         if (users) {
@@ -653,7 +652,6 @@ class Main extends Component {
           ) //stockage des sockets id dans ma globale "connections",
           // c'est ici que j'initialise la connection P2P avec webRTC
 
-       
           // je collecte mes iceCandidates
           connections[socketListId].onicecandidate = function (event) {
             if (event.candidate != null) {
@@ -708,14 +706,17 @@ class Main extends Component {
               video.onclick = this.handleVideoClick
               const videoId = "video_" + socketListId;
               video.setAttribute("id", videoId);
+              video.classList.add("video-with-username");
+              video.setAttribute("data-username", username);
+              video.srcObject = event.stream;
               main.appendChild(video)
         
+              this.adaptCSS(main);
 
             }else{
               searchVideo.srcObject = event.stream;
 
             }
-
 
           }
 
@@ -772,8 +773,7 @@ class Main extends Component {
     }
   }
 
-  // pourquoi !this.state ??? bah parce que ça permute de false à true (clique et reclique) tu comprends mon gars?
-  // un peu comme prevState en composant fonction capiche ?
+  // pourquoi !this.state ??? bah parce que ça permute de false à true (clique et reclique) tu comprends mon garçon?
   handleVideo = () =>
     this.setState({ video: !this.state.video }, () => this.getUserMedia())
     handleAudio = () => {
@@ -806,8 +806,10 @@ class Main extends Component {
 
   addMessage = (data, sender, socketIdSender) => {
     this.setState((prevState) => ({
-      messages: [...prevState.messages, { sender: sender, data: data }],
+      messages: [...prevState.messages, { sender: sender, data: data }], // je prend le tableau messages 
+      //et y ajoute sender et data sans y ecraser les autres msgs dans le tableau messages, tu comprends mon lait ?
     }))
+
     if (socketIdSender !== socketId) {
       // si c'est pas moi qui envoie le msg, j'incremente le chiffre de la notif d'un new msg
       this.setState({ newmessages: this.state.newmessages + 1 })
@@ -847,8 +849,9 @@ class Main extends Component {
   }
 
   sendMessage = () => {
-    socket.emit("chat-message", this.state.message, this.state.username)
-    this.setState({ message: "", sender: this.state.username })
+    socket.emit("chat-message", this.state.message, this.state.username) // j'emit les states username et message 
+    // une fois le message envoyé, jrefou l'input à vide et je laisse this.username as sender of course 
+    this.setState({ message: "", sender: this.state.username }) 
   }
 
   copyConfLink = () => {
