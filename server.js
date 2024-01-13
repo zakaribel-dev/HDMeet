@@ -104,31 +104,28 @@ io.on('connection', (socket) => {
 
 
 	socket.on('disconnect', () => {
+		console.log(`User ${socket.username} disconnected with ID ${socket.id}`);
+	
 		const updatedConnections = {};
-
+	
 		for (const key in connections) {
 			const remainingSockets = connections[key].filter(socketId => socketId !== socket.id);
-
+	
 			if (remainingSockets.length > 0) {
 				updatedConnections[key] = remainingSockets;
-
+	
 				remainingSockets.forEach((recipient) => {
 					io.to(recipient).emit("userLeft", socket.id);
 				});
 			} else {
-				console.log(`Tous les utilisateurs ont quitté la salle : ${key}`);
+				console.log(`All users have left the room: ${key}`);
 			}
 		}
-
+	
 		connections = updatedConnections;
 
-		for (let path in roomUsers) {
-			// contient tableau de tous les users dont l'id n'est pas égal au socket id, du coup ça contient les users de la room actuelle
-			roomUsers[path] = roomUsers[path].filter(user => user.id !== socket.id);
-			// MAJ de la liste des utilisateurs pour tous les clients de la room
-			io.to(path).emit('update-user-list', roomUsers[path]);
-		}
 	});
+	
 })
 
 

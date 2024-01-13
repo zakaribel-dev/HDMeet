@@ -80,7 +80,6 @@ class Main extends Component {
       isAdmin: false,
       loadingCamera: true,
       isSpeakingStates: {},
-
     }
 
     axios
@@ -151,7 +150,6 @@ class Main extends Component {
   }
 
   getUserMedia = () => {
-    console.log("Appel de getUserMedia", { video: this.state.video, audio: this.state.audio });
 
     if (
       (this.state.video && this.videoAvailable) ||
@@ -558,34 +556,43 @@ class Main extends Component {
     socket.on("signal", this.signalFromServer)
 
     socket.on("connect", () => {
-      socket.emit(
-        "joinCall",
-        window.location.href,
-        this.state.username,
-        this.state.currentUserEmail
-      )
-      socketId = socket.id
 
-      socket.on("update-user-list", (users) => {
-        if (users) {
-          // si j'fais pas ça il va mdire undefined blablabla
-          let updatedUsernames = {}
-          users.forEach((user) => {
-            updatedUsernames[user.id] = user.username
-          })
-          this.setState({ usernames: updatedUsernames })
-        } else {
-          console.log(
-            "Pas encore de user ou ya comme une couille dans l'paté.."
-          )
-        }
-      })
+    socket.emit(
+      "joinCall",
+      window.location.href,
+      this.state.username,
+      this.state.currentUserEmail
+    )
+    socketId = socket.id
+
+    socket.on("update-user-list", (users) => {
+      if (users) {
+        // si j'fais pas ça il va mdire undefined blablabla
+        let updatedUsernames = {}
+        users.forEach((user) => {
+          updatedUsernames[user.id] = user.username
+        })
+        this.setState({ usernames: updatedUsernames })
+      } else {
+        console.log(
+          "Pas encore de user ou ya comme une couille dans l'paté.."
+        )
+      }
+    })
 
       socket.on("chat-message", this.addMessage)
 
       socket.on("userLeft", (id) => {
         let video = document.querySelector(`[data-socket="${id}"]`)
         let username = this.state.usernames[id] || "Un utilisateur"
+
+         // J'update l'array usernames quand un user quitte la room "...this.state.usernames" 
+         //car je creer une sorte de copie pour effectuer mon delete ensuite jenvoie cette copie à ma vraie state
+    const updatedUsernames = { ...this.state.usernames };
+    delete updatedUsernames[id]; // du coup je supprime l'utilisateur en supprimant son index id
+
+    this.setState({ usernames: updatedUsernames });
+
 
         if (id !== socketId) {
           this.playUserDisconnectedSound()
@@ -706,8 +713,8 @@ class Main extends Component {
               video.onclick = this.handleVideoClick
               const videoId = "video_" + socketListId;
               video.setAttribute("id", videoId);
-              video.classList.add("video-with-username");
-              video.setAttribute("data-username", username);
+              // video.classList.add("video-with-username");
+              // video.setAttribute("data-username", username);
               video.srcObject = event.stream;
               main.appendChild(video)
         
