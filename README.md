@@ -1,10 +1,7 @@
 # HDMeet
 
-OUI j'ai fait mes components en composant classe pour raison de familiarité, j'ai appris en composant classe !
+coucou,
 
+yarn install & yarn dev
 
-concernant main.jsx : 
-
-Moi = socketId 
-les autres = id in connections
-
+bye.

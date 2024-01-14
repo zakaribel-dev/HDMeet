@@ -42,7 +42,7 @@
     "xss": "^1.0.14"
   },
   "scripts": {
-    "dev": "concurrently -n 'server,client' -c 'red,green' \"nodemon server.js\" \"set NODE_ENV=dev&&set PORT=8000&&react-app-rewired start\"",
+    "dev": "concurrently -n 'server,client'  \"nodemon server.js\" \"set NODE_ENV=dev&&set PORT=8000&&react-app-rewired start\"",
     "build": "react-app-rewired build",
     "test": "jest",
     "eject": "react-scripts eject"
