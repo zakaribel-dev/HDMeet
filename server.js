@@ -109,7 +109,7 @@ io.on('connection', (socket) => {
 		const updatedConnections = {};
 	
 		for (const key in connections) {
-			const remainingSockets = connections[key].filter(socketId => socketId !== socket.id);
+			const remainingSockets = connections[key].filter(socketId => socketId !== socket.id); // Jrecupere les sockets autres socket (pas mon socket)
 	
 			if (remainingSockets.length > 0) {
 				updatedConnections[key] = remainingSockets;

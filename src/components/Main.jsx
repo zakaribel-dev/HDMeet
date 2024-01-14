@@ -139,49 +139,48 @@ class Main extends Component {
   getMedia = () => {
     this.setState(
       {
-        video: this.videoAvailable,
-        audio: this.audioAvailable,
+        video: this.videoAvailable, // videoAvailable = acces video autorisé par user donc this.state.video sera true
+        audio: this.audioAvailable, // ...
       },
       () => {
-        this.getUserMedia()
-        this.connectToSocketServer()
+        this.getUserMedia()  // llorsque l'utilisateur arrivera dans la room sa camera/son audio sera activée ou désactivée en fonction des permissions 
+        this.connectToSocketServer() // ensuite jenclenche la logique de connexion server notamment en recuperant l'username, l'email, signal pour SDP/iceCandidates etc....
       }
     )
   }
+  
 
   getUserMedia = () => {
-
     if (
       (this.state.video && this.videoAvailable) ||
       (this.state.audio && this.audioAvailable)
     ) {
       navigator.mediaDevices
-        // en param je mets ce que je veux récuperer (l'utilisateur va recevoir une demande pour acceder à son micro + caméra)
+        // en param je mets ce que je veux récuperer
         .getUserMedia({ video: this.state.video, audio: this.state.audio })
-        // ce machin va mretourner un obj "MediaStream" qui est simplement le flux que j'ai récupéré
+        // ce machin va mretourner un obj "MediaStream" qui est simplement le flux que j'ai récupéré (audio + video ou audio/video)
         .then(this.getUserMediaSuccess) //si c'est good j'apelle getUserMediaSuccess qui recuperera le MediaStream en param
         .then((stream) => {})
         .catch((e) => console.log(e))
-    } else {
+    } else { // sinon si ni l'audio ni la video sont activés  je stop tout en meme temps : 
       try {
-        //si l'utilisateur n'accepte pas l'acces à sa cam + audio parce qu'il est grave timide alors on capture pas son stream
         let tracks = this.myVideo.current.srcObject.getTracks()
         tracks.forEach((track) => track.stop())
       } catch (e) {
         console.log(e)
       }
     }
+    // à savoir que getUserMedia est appelé à chaque fois qu'un utilisateur desactive et ou réactive son audio ou sa camera afin de stopper ou reactiver le media correspondant
+    // en rappelant getuserMedia cette fois si avec les states mises à jour (voir handleAudio et handleVideo)
   }
 
   getUserMediaSuccess = (stream) => {
-    console.log("Flux de médias récupéré dans getUserMediaSuccess", stream);
-
     // "stream" contient mon objet MediaStream qui m'est retourné quand l'user a accepté qu'on ait acces à sa cam + micro..
     //(voir plus haut dans getUserMedia)
     // Met à jour le flux local avec le nouveau flux de la caméra/microphone.
     window.localStream = stream
     this.myVideo.current.srcObject = stream
-    this.setupAudioAnalyser(stream, socketId);
+    this.setupAudioAnalyser(stream, socketId); // appel à cette fonction pour la gestion de l'affichage de la frame verte autour de la video lorsqu'un utilisateur parle
     
     // ici je boucle dans toute les connexions actuelles..
     for (let id in connections) {
@@ -210,20 +209,6 @@ class Main extends Component {
         .catch((e) => console.log(e))
     }
 
-    // DESACTIVATION CAMERA
-    stream.getTracks().forEach((track) => {
-      track.onended = () => {
-        this.setState(
-          {
-            video: false,
-            audio: false,
-          },
-          () => {
-            this.getUserMedia()
-          }
-        )
-      }
-    })
   }
 
   updateSpeakingState = (userId, speaking) => {
@@ -569,7 +554,7 @@ class Main extends Component {
       if (users) {
         // si j'fais pas ça il va mdire undefined blablabla
         let updatedUsernames = {}
-        users.forEach((user) => {
+        users.forEach((user) => {    
           updatedUsernames[user.id] = user.username
         })
         this.setState({ usernames: updatedUsernames })
@@ -781,15 +766,13 @@ class Main extends Component {
   }
 
   // pourquoi !this.state ??? bah parce que ça permute de false à true (clique et reclique) tu comprends mon garçon?
-  handleVideo = () =>
-    this.setState({ video: !this.state.video }, () => this.getUserMedia())
-    handleAudio = () => {
-      console.log(`État actuel du micro avant mute/unmute: ${this.state.audio}`);
-      this.setState({ audio: !this.state.audio }, () => {
-        console.log(`État du micro après mute/unmute: ${this.state.audio}`);
-        this.getUserMedia();
-      });
-    };
+  handleVideo = () => {
+    this.setState({ video: !this.state.video }, () => this.getUserMedia());
+  }
+  
+  handleAudio = () => {
+    this.setState({ audio: !this.state.audio }, () => this.getUserMedia());
+  }
     
   handleScreen = () =>
     this.setState({ screen: !this.state.screen }, () =>
