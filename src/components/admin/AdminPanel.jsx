@@ -9,6 +9,7 @@ import "rodal/lib/rodal.css"
 import axios from "axios"
 import "../../style/Admin.css"
 
+
 class AdminPanel extends Component {
 
   
@@ -29,9 +30,7 @@ class AdminPanel extends Component {
       showPasswordInputForCreate: false,
       password: "",
       newPassword: "",
-    }
-
-  
+    }  
   }
   componentDidMount() {
     this.fetchUsers();
@@ -39,9 +38,12 @@ class AdminPanel extends Component {
     this.setState({ userEmail: adminEmail });
   }
 
+  handleLogout = () => {
+    localStorage.removeItem('authToken');
+    window.location.href = "/";
+  };
 
   fetchUsers = () => {
-    // Fonction pour récupérer les utilisateurs depuis le serveur
     axios
       .get(`http://localhost:4001/users`)
       .then((response) => {
@@ -53,7 +55,6 @@ class AdminPanel extends Component {
   }
 
   openRoleUpdateModal = (user) => {
-    // Fonction pour ouvrir la fenêtre de mise à jour du rôle
     this.setState({
       selectedUserForRoleUpdate: user,
       role: user.role,
@@ -61,7 +62,6 @@ class AdminPanel extends Component {
   }
 
   closeRoleUpdateModal = () => {
-    // Fonction pour fermer la fenêtre de mise à jour du rôle
     this.setState({
       selectedUserForRoleUpdate: null,
       showPasswordInputForUpdate: false,
@@ -83,26 +83,22 @@ class AdminPanel extends Component {
   }
 
   toggleUserTable = () => {
-    // Fonction pour basculer l'affichage du tableau des utilisateurs
     this.setState((prevState) => ({
       showUserTable: !prevState.showUserTable,
     }))
   }
 
   handleNewUserEmailChange = (e) => {
-    // Fonction pour gérer le changement de l'email du nouvel utilisateur
     this.setState({ newUserEmail: e.target.value })
   }
 
   handleNewUserRoleChange = (e) => {
-    // Fonction pour gérer le changement du rôle du nouvel utilisateur
     const newUserRole = e.target.value
     const showPasswordInputForCreate = newUserRole === "ADMIN"
     this.setState({ newUserRole, showPasswordInputForCreate })
   }
 
   handleEmailChange = (e) => {
-    // Fonction pour gérer le changement de l'email de l'utilisateur
     this.setState({ userEmail: e.target.value })
   }
 
@@ -115,7 +111,6 @@ class AdminPanel extends Component {
   }
 
   handleCreateUser = (e) => {
-    // Fonction pour gérer la création d'un nouvel utilisateur
     e.preventDefault()
     const { newUserEmail, newUserRole, password } = this.state
 
@@ -213,6 +208,9 @@ class AdminPanel extends Component {
         <div className="content">
           <h1 style={{ fontFamily: "Nunito / Nunito Sans" }}>Administrateur(trice) : <u>{this.state.userEmail}</u> </h1>
           <br />
+          <Button style={{backgroundColor:'red', color:'white', position:'absolute', top:'0',right:'0'}} onClick={this.handleLogout} variant="contained">
+            Se déconnecter
+          </Button>
           <Button onClick={this.toggleCreateUserForm} variant="contained">
             {showCreateUserForm
               ? "Cacher le formulaire"

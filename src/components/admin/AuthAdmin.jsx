@@ -4,14 +4,15 @@ import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@material-ui/core"
 import { message } from "antd" // superbe bibliothèque..
 import logo from "../../assets/hdmlogo.png"
-import bcrypt from "bcryptjs" // Importez bcryptjs
+import { useAuth } from '../../context/authContext';
 
 
 const AuthAdmin = () => {
   const [adminEmail, setAdminEmail] = useState("")
   const [adminPassword, setAdminPassword] = useState("")
-
+  const { login } = useAuth(); 
   const navigate = useNavigate()
+  
 
   const handleAdminEmailChange = (e) => {
     setAdminEmail(e.target.value.toLowerCase())
@@ -27,36 +28,20 @@ const AuthAdmin = () => {
     }
 
     axios
-      .get("http://localhost:4001/users")
-      .then((response) => {
-        const users = response.data
+    .post("http://localhost:4001/login", { email: adminEmail, password: adminPassword })
+    .then((response) => {
+      const { token } = response.data;
 
-        // si dans response je trouve l'email de l'input qui match avec le role admin alors je tiens mon "user"
-        const user = users.find(
-          (user) => user.email === adminEmail && user.role.includes("ADMIN")
-        )
+      login(token);
 
-        if (user) {
-          // j'utilise bcrypt.js pour comparer le mdp hashé en bdd et l'input password
-          const passwordMatch = bcrypt.compareSync(adminPassword, user.password)
-
-          if (passwordMatch) {
-            localStorage.setItem('adminEmail', adminEmail);
-            navigate('/adminPanel');
-          } else {
-            message.error("Mot de passe incorrect.")
-          }
-        } else {
-          message.error("Utilisateur non autorisé. Zou!")
-        }
-      })
-      .catch((error) => {
-        console.error(
-          "Erreur lors de la récupération des utilisateurs :",
-          error
-        )
-      })
-  }
+      localStorage.setItem('adminEmail', adminEmail);
+      navigate('/adminPanel');
+    })
+    .catch((error) => {
+      console.error("Erreur lors de l'authentification :", error);
+      message.error("Mot de passe ou utilisateur incorrect.")
+    })
+}
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {

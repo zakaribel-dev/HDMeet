@@ -7,6 +7,11 @@ const bodyParser = require('body-parser')
 const path = require("path") // récuperer l'id de la room
 const bcrypt = require('bcrypt');
 let xss = require("xss")
+const jwt = require('jsonwebtoken');
+const session = require('express-session');
+const { authenticateToken } = require("./middleware/Auth");
+const adminPanelRoute = require("./routes/adminPanelRoute");
+
 
 let server = http.createServer(app)
 let io = require('socket.io')(server, {
@@ -16,8 +21,15 @@ let io = require('socket.io')(server, {
 	}
 });
 
-app.use(cors())
+app.use(cors({
+	origin: "http://localhost:8000", 
+	methods: ["GET", "POST"]
+  }));
+  
 app.use(bodyParser.json())
+
+app.use('/adminPanel', authenticateToken, adminPanelRoute);
+
 
 if (process.env.NODE_ENV === 'production') { // mode prod
 	app.use(express.static(__dirname + "/build"))
@@ -25,7 +37,7 @@ if (process.env.NODE_ENV === 'production') { // mode prod
 		res.sendFile(path.join(__dirname + "/build/index.html"))
 	})
 }
-app.set('port',  4001)
+app.set('port', 4001)
 
 sanitizeString = (str) => {
 	return xss(str)  // cette bibliotheque protege des faille xss
@@ -77,8 +89,8 @@ io.on('connection', (socket) => {
 
 	socket.on('user-speaking', (data) => {
 		socket.broadcast.emit('user-speaking', data);
-	  });
-	  
+	});
+
 	socket.on('signal', (toId, message) => { // message contient le SDP généré avec createOffer coté front
 		io.to(toId).emit('signal', socket.id, message) // j'emit le signal du socket.id (moi)  vers les autres sockets
 	})
@@ -105,15 +117,15 @@ io.on('connection', (socket) => {
 
 	socket.on('disconnect', () => {
 		console.log(`User ${socket.username} disconnected with ID ${socket.id}`);
-	
+
 		const updatedConnections = {};
-	
+
 		for (const key in connections) {
 			const remainingSockets = connections[key].filter(socketId => socketId !== socket.id); // Jrecupere les sockets autres socket (pas mon socket)
-	
+
 			if (remainingSockets.length > 0) {
 				updatedConnections[key] = remainingSockets;
-	
+
 				remainingSockets.forEach((recipient) => {
 					io.to(recipient).emit("userLeft", socket.id);
 				});
@@ -121,11 +133,11 @@ io.on('connection', (socket) => {
 				console.log(`All users have left the room: ${key}`);
 			}
 		}
-	
+
 		connections = updatedConnections;
 
 	});
-	
+
 })
 
 
@@ -157,9 +169,9 @@ app.get('/users', (req, res) => {
 		} else {
 			const sanitizedResults = results.map(user => ({
 				...user,
-				//Si un pti malin a réussi je n'sais comment a injecter du code dans la bdd bah je nettoie ça avant d'envoyer au client
+				//Si un pti malin (ou une ptite maline) a réussi je n'sais comment a injecter du code dans la bdd bah je nettoie ça avant d'envoyer au client
 				email: sanitizeString(user.email),
-				password : sanitizeString(user.password)
+				password: sanitizeString(user.password)
 			}));
 			res.json(sanitizedResults);
 		}
@@ -169,69 +181,69 @@ app.get('/users', (req, res) => {
 
 app.put('/updateRoles', (req, res) => {
 	let { email, newRole, newPassword } = req.body;
-     
+
 	email = sanitizeString(email);
 	newRole = sanitizeString(newRole);
 	newPassword = sanitizeString(newPassword);
 
 	if (!email || !newRole) {
-	  return res.status(400).json({ error: 'Email et nouveau rôle sont requis.' });
+		return res.status(400).json({ error: 'Email et nouveau rôle sont requis.' });
 	}
-  
+
 	let query = 'UPDATE users SET role = ?';
 	let queryParams = [newRole, email];
-  
+
 	// Si j'ai select "ADMIN" dans le form
 	if (newRole === "ADMIN" && newPassword) {
 
-	  bcrypt.hash(newPassword, 10, (err, hashedPassword) => {
-		if (err) {
-		  console.error('Erreur lors du hachage du mot de passe :', err);
-		  return res.status(500).json({ error: 'Erreur lors du hachage du mot de passe.' });
-		}
-  
-		query += ', password = ?'; // je concatene ", password = ? " à ma query
-		queryParams = [newRole,hashedPassword, email];
+		bcrypt.hash(newPassword, 10, (err, hashedPassword) => {
+			if (err) {
+				console.error('Erreur lors du hachage du mot de passe :', err);
+				return res.status(500).json({ error: 'Erreur lors du hachage du mot de passe.' });
+			}
 
-			console.log("email  " + email )
-			console.log( "newRole " + newRole)
-			console.log( "newPassword "+ newPassword)	
+			query += ', password = ?'; // je concatene ", password = ? " à ma query
+			queryParams = [newRole, hashedPassword, email];
+
+			console.log("email  " + email)
+			console.log("newRole " + newRole)
+			console.log("newPassword " + newPassword)
 			console.log("queryParams " + queryParams)
 			console.log('query ' + query)
-			
+
 			// à ce stade j'ai  query qui est egal à UPDATE users set role = ? (ce sera newRole) ensuite je concatene ', pasword ?' (ce sera hashedPass)
 			// pareil pour email à la fin de la query. C'est pour ça que l'ordre est important dans queryParams
-		connection.query(query + ' WHERE email = ?', queryParams , (err, results) => {
-		  if (err) {
-			console.error('Erreur lors de la mise à jour du rôle et du mot de passe de l\'utilisateur :', err);
-			return res.status(500).json({ error: 'Erreur lors de la mise à jour du rôle et du mot de passe de l\'utilisateur.' });
-		  }
-  
-		  if (results.affectedRows === 0) {
-			return res.status(404).json({ error: 'Utilisateur non trouvé.' });
-		  }
-  
-		  res.json({ message: 'Rôle et mot de passe de l\'utilisateur mis à jour avec succès.' });
+			connection.query(query + ' WHERE email = ?', queryParams, (err, results) => {
+				if (err) {
+					console.error('Erreur lors de la mise à jour du rôle et du mot de passe de l\'utilisateur :', err);
+					return res.status(500).json({ error: 'Erreur lors de la mise à jour du rôle et du mot de passe de l\'utilisateur.' });
+				}
+
+				if (results.affectedRows === 0) {
+					return res.status(404).json({ error: 'Utilisateur non trouvé.' });
+				}
+
+				res.json({ message: 'Rôle et mot de passe de l\'utilisateur mis à jour avec succès.' });
+			});
 		});
-	  });
 	} else {
-	  // Sinon je met juste à jour son role (si j'ai pas select admin dans le form)
-	  console.log("KOUERY : " +query, "queryPaRAMS : " + queryParams)
-	  connection.query(query + ' WHERE email = ?', queryParams, (err, results) => {
-		if (err) {
-		  console.error('Erreur lors de la mise à jour du rôle de l\'utilisateur :', err);
-		  return res.status(500).json({ error: 'Erreur lors de la mise à jour du rôle de l\'utilisateur.' });
-		}
-  
-		if (results.affectedRows === 0) {
-		  return res.status(404).json({ error: 'Utilisateur non trouvé.' });
-		}
-  
-		res.json({ message: 'Rôle de l\'utilisateur mis à jour avec succès.' });
-	  });
+		// Sinon je met juste à jour son role (si j'ai pas select admin dans le form)
+		console.log("KOUERY : " + query, "queryPaRAMS : " + queryParams)
+		connection.query(query + ' WHERE email = ?', queryParams, (err, results) => {
+			if (err) {
+				console.error('Erreur lors de la mise à jour du rôle de l\'utilisateur :', err);
+				return res.status(500).json({ error: 'Erreur lors de la mise à jour du rôle de l\'utilisateur.' });
+			}
+
+			if (results.affectedRows === 0) {
+				return res.status(404).json({ error: 'Utilisateur non trouvé.' });
+			}
+
+			res.json({ message: 'Rôle de l\'utilisateur mis à jour avec succès.' });
+		});
 	}
-  });
-  
+});
+
 
 
 app.post('/insertUser', (req, res) => {
@@ -248,21 +260,21 @@ app.post('/insertUser', (req, res) => {
 
 	bcrypt.hash(password, 10, (err, hashedPassword) => {
 		if (err) {
-		  console.error('Erreur lors du hachage du mot de passe :', err);
-		  return res.status(500).json({ error: 'Erreur lors du hachage du mot de passe.' });
+			console.error('Erreur lors du hachage du mot de passe :', err);
+			return res.status(500).json({ error: 'Erreur lors du hachage du mot de passe.' });
 		}
-	
+
 		const query = 'INSERT INTO users (email, role, password) VALUES (?, ?, ?)';
 		connection.query(query, [email, role, hashedPassword], (dbErr) => {
-		  if (dbErr) {
-			console.error('Erreur lors de l\'insertion de l\'utilisateur :', dbErr);
-			return res.status(500).json({ error: 'Erreur lors de l\'insertion de l\'utilisateur.' });
-		  }
-	
-		  res.json({ message: 'Utilisateur inséré avec succès!' });
+			if (dbErr) {
+				console.error('Erreur lors de l\'insertion de l\'utilisateur :', dbErr);
+				return res.status(500).json({ error: 'Erreur lors de l\'insertion de l\'utilisateur.' });
+			}
+
+			res.json({ message: 'Utilisateur inséré avec succès!' });
 		});
-	  });
 	});
+});
 
 
 app.delete('/deleteUser/:email', (req, res) => {
@@ -281,6 +293,54 @@ app.delete('/deleteUser/:email', (req, res) => {
 
 
 		res.json({ message: 'Utilisateur supprimé avec succès!' });
+	});
+});
+
+app.use(session({
+	secret: "coucou_toi",
+	resave: true,
+	saveUninitialized: true,
+}));
+
+
+app.post('/login', (req, res) => {
+	const { email, password } = req.body;
+
+	if (!email || !password) {
+		return res.status(400).json({ error: 'Email et mot de passe sont requis.' });
+	}
+
+	const query = 'SELECT * FROM users WHERE email = ?';
+	connection.query(query, [email], (err, results) => {
+		if (err) {
+			console.error('Erreur lors de la recherche de l\'utilisateur :', err);
+			return res.status(500).json({ error: 'Erreur lors de la recherche de l\'utilisateur.' });
+		}
+
+		if (results.length === 0) {
+			return res.status(401).json({ error: 'Utilisateur non trouvé.' });
+		}
+
+		const user = results[0];
+
+		// jcompare le mdp fourni avec celui qui est haché en bdd
+		bcrypt.compare(password, user.password, (bcryptErr, passwordMatch) => {
+			if (bcryptErr) {
+				console.log('Résultat de la comparaison des mots de passe :', passwordMatch);
+
+				console.error('Erreur lors de la comparaison des mots de passe :', bcryptErr);
+				return res.status(500).json({ error: 'Erreur lors de l\'authentification.' });
+			}
+
+			if (passwordMatch) {
+				// le password a match alors je genere un token
+				const token = jwt.sign({ email: user.email, role: user.role }, 'coucou_toi', { expiresIn: '1h' });
+				console.log('Token généré :', token);
+				res.json({ token });
+			  } else {
+				res.status(401).json({ error: 'Mot de passe incorrect.' });
+			  }
+		});
 	});
 });
 
