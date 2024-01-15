@@ -326,9 +326,6 @@ app.post('/login', (req, res) => {
 		// jcompare le mdp fourni avec celui qui est haché en bdd
 		bcrypt.compare(password, user.password, (bcryptErr, passwordMatch) => {
 			if (bcryptErr) {
-				console.log('Résultat de la comparaison des mots de passe :', passwordMatch);
-
-				console.error('Erreur lors de la comparaison des mots de passe :', bcryptErr);
 				return res.status(500).json({ error: 'Erreur lors de l\'authentification.' });
 			}
 
