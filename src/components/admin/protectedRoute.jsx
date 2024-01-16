@@ -1,8 +1,8 @@
 import React from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
-import { useAuth } from '../context/authContext';
+import { useAuth } from '../../context/authContext';
 
-const ProtectedRoute = ({ component: Component }) => {
+const ProtectedRoute = ({ component: Component }) => { // dans app.js j'utilise le component protectedRoute et en param je fou le composant adminPanel
   const { token } = useAuth(); // mon authcontext me retourne un token
 
   return token ? ( // si ya un token in ze building alors je dirige vers la route qu'il faut (adminPanel en loccurence)

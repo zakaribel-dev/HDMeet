@@ -10,7 +10,6 @@ const bcrypt = require('bcrypt');
 let xss = require("xss")
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
-const { authenticateToken } = require("./middleware/Auth");
 
 
 let server = http.createServer(app)
@@ -300,8 +299,6 @@ app.delete('/deleteUser/:email', (req, res) => {
 app.post('/login', (req, res) => {
 	const { email, password } = req.body;
   
-	app.use('/adminPanel', authenticateToken); // "/adminPanel" sera dans ma request dans athenticateToken
-
 	app.use(session({
 		secret: process.env.JWT_SECRET,
 		resave: true,

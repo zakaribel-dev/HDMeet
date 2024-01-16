@@ -5,7 +5,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import AuthAdmin from './components/admin/AuthAdmin.jsx';
 import AdminPanel from './components/admin/AdminPanel.jsx';
 import { AuthProvider } from './context/authContext.js';
-import ProtectedRoute from './components/protectedRoute.jsx';
+import ProtectedRoute from './components/admin/protectedRoute.jsx';
 
 class App extends Component {
 
