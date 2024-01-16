@@ -36,6 +36,19 @@ class AdminPanel extends Component {
     this.fetchUsers();
     const adminEmail = localStorage.getItem('adminEmail');
     this.setState({ userEmail: adminEmail });
+    fetch('/adminPanel', {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer VOTRE_TOKEN', 
+      },
+    })
+      .then(response => response.text())
+      .then(data => {
+        console.log(data);  // MSG
+      })
+      .catch(error => {
+        console.error('Erreur:', error);
+      });
   }
 
   handleLogout = () => {

@@ -1,4 +1,5 @@
 /* eslint-disable no-undef */
+require('dotenv').config();
 const express = require('express')
 const http = require('http')
 let cors = require('cors')
@@ -10,7 +11,6 @@ let xss = require("xss")
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
 const { authenticateToken } = require("./middleware/Auth");
-const adminPanelRoute = require("./routes/adminPanelRoute");
 
 
 let server = http.createServer(app)
@@ -28,7 +28,6 @@ app.use(cors({
   
 app.use(bodyParser.json())
 
-app.use('/adminPanel', authenticateToken, adminPanelRoute);
 
 
 if (process.env.NODE_ENV === 'production') { // mode prod
@@ -146,10 +145,10 @@ io.on('connection', (socket) => {
 const mysql = require('mysql2');
 
 const connection = mysql.createConnection({
-	host: 'localhost',
-	user: 'root',
-	password: '',
-	database: 'hdmeet'
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_DATABASE
 });
 
 connection.connect((err) => {
@@ -296,16 +295,20 @@ app.delete('/deleteUser/:email', (req, res) => {
 	});
 });
 
-app.use(session({
-	secret: "coucou_toi",
-	resave: true,
-	saveUninitialized: true,
-}));
 
 
 app.post('/login', (req, res) => {
 	const { email, password } = req.body;
-
+  
+	app.use('/adminPanel', authenticateToken, (req, res) => {
+	
+		res.send("Bienvenue dans votre espace administrateur");
+	  });	app.use(session({
+		secret: process.env.JWT_SECRET,
+		resave: true,
+		saveUninitialized: true,
+	}));
+	
 	if (!email || !password) {
 		return res.status(400).json({ error: 'Email et mot de passe sont requis.' });
 	}
@@ -331,7 +334,7 @@ app.post('/login', (req, res) => {
 
 			if (passwordMatch) {
 				// le password a match alors je genere un token
-				const token = jwt.sign({ email: user.email, role: user.role }, 'coucou_toi', { expiresIn: '1h' });
+				const token = jwt.sign({ email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
 				console.log('Token généré :', token);
 				res.json({ token });
 			  } else {

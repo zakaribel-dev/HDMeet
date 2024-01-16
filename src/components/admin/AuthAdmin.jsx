@@ -10,7 +10,7 @@ import { useAuth } from '../../context/authContext';
 const AuthAdmin = () => {
   const [adminEmail, setAdminEmail] = useState("")
   const [adminPassword, setAdminPassword] = useState("")
-  const { login } = useAuth(); 
+  const { login } = useAuth();  // fonction login de authContext
   const navigate = useNavigate()
   
 
@@ -32,7 +32,7 @@ const AuthAdmin = () => {
     .then((response) => {
       const { token } = response.data;
 
-      login(token);
+      login(token);// j'envoie le token en localstorage via la methode login de authContext !
 
       localStorage.setItem('adminEmail', adminEmail);
       navigate('/adminPanel');

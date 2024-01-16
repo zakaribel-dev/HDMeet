@@ -21,7 +21,7 @@ import { Link } from "react-router-dom"
 
 // attention à faire en sorte qu'il y ait pas de souci avec protocol SSL (ça m'a bien fait chier)
 const server_url =
-  process.env.NODE_ENV === "production" //je définis NODE_ENV dans un script "server" (go voir package.json)
+  process.env.NODE_ENV === "production" 
     ? "http://195.35.25.238:4001"
     : "http://localhost:4001"
 

@@ -18,14 +18,13 @@ const Home = () => {
       <div>
         <img className='logo' src={logo} alt="" /> <br />
         <Button className='startBtn' variant="contained" color="primary" onClick={createRoom}>Commencer</Button>
-
-        {/* Conditionally render the link based on authentication status */}
+    
         {isAuthenticated ? (
-          <Link to="/adminPanel"> {/* Link to adminPanel if authenticated */}
+          <Link to="/adminPanel"> 
             <Button className='startBtn' variant="contained" color="primary">Administration</Button>
           </Link>
         ) : (
-          <Link to="/authAdmin"> {/* Link to authAdmin if not authenticated */}
+           <Link to="/authAdmin">
             <Button className='startBtn' variant="contained" color="primary">Administration</Button>
           </Link>
         )}
