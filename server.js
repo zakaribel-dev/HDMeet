@@ -23,7 +23,7 @@ let io = require('socket.io')(server, {
 
 app.use(cors({
 	origin: "http://localhost:8000", 
-	methods: ["GET", "POST"]
+	methods: ["GET", "POST","PUT"]
   }));
   
 app.use(bodyParser.json())
@@ -300,10 +300,9 @@ app.delete('/deleteUser/:email', (req, res) => {
 app.post('/login', (req, res) => {
 	const { email, password } = req.body;
   
-	app.use('/adminPanel', authenticateToken, (req, res) => {
-	
-		res.send("Bienvenue dans votre espace administrateur");
-	  });	app.use(session({
+	app.use('/adminPanel', authenticateToken); // "/adminPanel" sera dans ma request dans athenticateToken
+
+	app.use(session({
 		secret: process.env.JWT_SECRET,
 		resave: true,
 		saveUninitialized: true,

@@ -36,19 +36,7 @@ class AdminPanel extends Component {
     this.fetchUsers();
     const adminEmail = localStorage.getItem('adminEmail');
     this.setState({ userEmail: adminEmail });
-    fetch('/adminPanel', {
-      method: 'GET',
-      headers: {
-        'Authorization': 'Bearer VOTRE_TOKEN', 
-      },
-    })
-      .then(response => response.text())
-      .then(data => {
-        console.log(data);  // MSG
-      })
-      .catch(error => {
-        console.error('Erreur:', error);
-      });
+    message.info('Bienvenue dans votre espace administrateur')
   }
 
   handleLogout = () => {
@@ -219,11 +207,13 @@ class AdminPanel extends Component {
           />
         </Link>
         <div className="content">
-          <h1 style={{ fontFamily: "Nunito / Nunito Sans" }}>Administrateur(trice) : <u>{this.state.userEmail}</u> </h1>
-          <br />
+   
+          <p style={{color:'black', position:'absolute', top:'1%',right:'15%'}} >  <span className="online-indicator"></span> <b>{this.state.userEmail}</b>  </p>
+
           <Button style={{backgroundColor:'red', color:'white', position:'absolute', top:'0',right:'0'}} onClick={this.handleLogout} variant="contained">
             Se déconnecter
           </Button>
+          <br /><br />
           <Button onClick={this.toggleCreateUserForm} variant="contained">
             {showCreateUserForm
               ? "Cacher le formulaire"
