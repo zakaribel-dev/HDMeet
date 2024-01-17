@@ -273,10 +273,9 @@ class Main extends Component {
   }
   
   startRecording = () => {
-    const path = "chemin/vers/enregistrement"; // Remplacez cela par la logique réelle pour déterminer le chemin
+    const path = "./recordings"; 
     socket.emit('startRecording', path);
   
-    // Mettez à jour l'état local pour indiquer que l'enregistrement a commencé
     this.setState({
       recording: true,
       recordingPath: path,
@@ -1050,11 +1049,11 @@ class Main extends Component {
                   Copier le lien conférence
                 </Button>
                 <button onClick={this.startRecording} disabled={this.state.recording}>
-        Démarrer l'enregistrement
-      </button>
-      <button onClick={this.stopRecording} disabled={!this.state.recording}>
-        Arrêter l'enregistrement
-      </button>
+                  Démarrer l'enregistrement
+                </button>
+                <button onClick={this.stopRecording} disabled={!this.state.recording}>
+                  Arrêter l'enregistrement
+                </button>
               </div>
 
               <Row

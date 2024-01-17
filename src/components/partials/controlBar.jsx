@@ -85,8 +85,7 @@ class ControlBar extends Component {
         </Button>
 
         <IconButton  onClick={this.props.onRequestSpeech}><PanToolIcon/></IconButton>
-        <button id="startRecording">Commencer l'enregistrement</button>
-<button id="stopRecording">Arrêter l'enregistrement</button>
+
       </div>
     );
   }
