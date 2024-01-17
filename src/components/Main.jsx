@@ -288,7 +288,6 @@ class Main extends Component {
     if (recordingPath) {
       socket.emit('stopRecording', recordingPath);
   
-      // Mettez à jour l'état local pour indiquer que l'enregistrement a été arrêté
       this.setState({
         recording: false,
         recordingPath: null,
