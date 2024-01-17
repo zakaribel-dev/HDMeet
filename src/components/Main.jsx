@@ -710,9 +710,10 @@ class Main extends Component {
           connections[socketListId].addStream(window.localStream)
         })
 
-        if (id === socketId) {
-          for (let id2 in connections) {
-            if (id2 === socketId) continue
+        if (id === socketId) { // si c'est moi
+          for (let id2 in connections) {  // id2 = les autres users déjà présents dans la room
+   // si les autres utilisateurs déjà present dans la room ont la meme id que moi bah je fais sauter l'itération(juste pour etre sur)
+            if (id2 === socketId) continue 
 
             const connection = connections[id2]
 
@@ -720,7 +721,6 @@ class Main extends Component {
               connection.addStream(window.localStream)
             } catch (e) {}
 
-            // createOffer stream audio/video (pas le partage d'ecran!)
             connection
               .createOffer()
               .then((description) =>
