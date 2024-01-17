@@ -10,7 +10,7 @@ const bcrypt = require('bcrypt');
 let xss = require("xss")
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
-
+const { authenticateToken } = require('./middleware/Auth'); 
 
 let server = http.createServer(app)
 let io = require('socket.io')(server, {
@@ -330,7 +330,7 @@ app.post('/login', (req, res) => {
 
 			if (passwordMatch) {
 				// le password a match alors je genere un token
-				const token = jwt.sign({ email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+				const token = jwt.sign({ email: user.email, role: user.role }, process.env.JWT_SECRET,  { expiresIn: '30m' });
 				console.log('Token généré :', token);
 				res.json({ token });
 			  } else {
@@ -340,6 +340,7 @@ app.post('/login', (req, res) => {
 	});
 });
 
+app.use('/adminPanel', authenticateToken); // "/adminPanel" sera dans ma request dans athenticateToken
 
 
 

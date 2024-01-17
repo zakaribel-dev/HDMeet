@@ -155,9 +155,7 @@ class Main extends Component {
       (this.state.video && this.videoAvailable) ||
       (this.state.audio && this.audioAvailable)
     ) {
-      navigator.mediaDevices
-        // en param je mets ce que je veux récuperer
-        .getUserMedia({ video: this.state.video, audio: this.state.audio })
+      navigator.mediaDevices.getUserMedia({ video: this.state.video, audio: this.state.audio })
         // ce machin va mretourner un obj "MediaStream" qui est simplement le flux que j'ai récupéré (audio + video ou audio/video)
         .then(this.getUserMediaSuccess) //si c'est good j'apelle getUserMediaSuccess qui recuperera le MediaStream en param
         .then((stream) => {})
@@ -208,7 +206,6 @@ class Main extends Component {
         })
         .catch((e) => console.log(e))
     }
-
   }
 
   updateSpeakingState = (userId, speaking) => {
@@ -348,11 +345,9 @@ class Main extends Component {
   signalFromServer = (fromId, body) => {
     let signal = JSON.parse(body)
 
-
     if (signal.speaking !== undefined) {
       this.updateSpeakingState(fromId, signal.speaking);
     }
-
 
     if (fromId !== socketId) {
       //jmassure que l'id du client (fromId) est différent du mien (socketId)

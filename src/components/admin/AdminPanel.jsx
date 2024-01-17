@@ -8,7 +8,7 @@ import Rodal from "rodal"
 import "rodal/lib/rodal.css"
 import axios from "axios"
 import "../../style/Admin.css"
-
+import { jwtDecode } from 'jwt-decode'
 
 class AdminPanel extends Component {
 
@@ -16,7 +16,6 @@ class AdminPanel extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      // État initial
       userEmail: "",
       role: "ADMIN",
       showCreateUserForm: false,
@@ -37,6 +36,21 @@ class AdminPanel extends Component {
     const adminEmail = localStorage.getItem('adminEmail');
     this.setState({ userEmail: adminEmail });
     message.info('Bienvenue dans votre espace administrateur')
+    const authToken = localStorage.getItem('authToken');
+
+if (authToken) {
+  try {
+    const decodedToken = jwtDecode(authToken);
+    console.log('Decoded Token:', decodedToken);
+    const currentTime = Math.floor(Date.now() / 1000);
+    if (decodedToken.exp && decodedToken.exp < currentTime) {
+      console.log('Token has expired. Logging out.');
+      this.handleLogout();  // Assuming you have a handleLogout method
+      return;
+    }  } catch (error) {
+    console.error('Error decoding JWT:', error);
+  }
+}
   }
 
   handleLogout = () => {
