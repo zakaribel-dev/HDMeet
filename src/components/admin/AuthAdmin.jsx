@@ -4,15 +4,13 @@ import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@material-ui/core"
 import { message } from "antd" // superbe bibliothèque..
 import logo from "../../assets/hdmlogo.png"
-import { useAuth } from '../../context/authContext';
-
+import { useAuth } from "../../context/authContext"
 
 const AuthAdmin = () => {
   const [adminEmail, setAdminEmail] = useState("")
   const [adminPassword, setAdminPassword] = useState("")
-  const { login } = useAuth();  // fonction login de authContext
+  const { login } = useAuth() // fonction login de authContext
   const navigate = useNavigate()
-  
 
   const handleAdminEmailChange = (e) => {
     setAdminEmail(e.target.value.toLowerCase())
@@ -28,20 +26,23 @@ const AuthAdmin = () => {
     }
 
     axios
-    .post("http://localhost:4001/login", { email: adminEmail, password: adminPassword })
-    .then((response) => {
-      const { token } = response.data;
+      .post("http://localhost:4001/login", {
+        email: adminEmail,
+        password: adminPassword,
+      })
+      .then((response) => {
+        const { token } = response.data
 
-      login(token);// j'envoie le token en localstorage via la methode login de authContext !
+        login(token) // j'envoie le token en localstorage via la methode login de authContext !
 
-      localStorage.setItem('adminEmail', adminEmail);
-      navigate('/adminPanel');
-    })
-    .catch((error) => {
-      console.error("Erreur lors de l'authentification :", error);
-      message.error("Mot de passe ou utilisateur incorrect.")
-    })
-}
+        localStorage.setItem("adminEmail", adminEmail)
+        navigate("/adminPanel")
+      })
+      .catch((error) => {
+        console.error("Erreur lors de l'authentification :", error)
+        message.error("Mot de passe ou utilisateur incorrect.")
+      })
+  }
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {

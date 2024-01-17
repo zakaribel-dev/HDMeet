@@ -119,20 +119,23 @@ io.on('connection', (socket) => {
 		const updatedConnections = {};
 
 		for (const key in connections) {
-			const remainingSockets = connections[key].filter(socketId => socketId !== socket.id); // Jrecupere les sockets autres socket (pas mon socket)
-
-			if (remainingSockets.length > 0) {
-				updatedConnections[key] = remainingSockets;
+			// filter les id de sockets de la salle actuelle (déterminée par lindex) 
+			//pour exclure l'id du socket qui vient de se déco
+			const remainingSockets = connections[key].filter(socketId => socketId !== socket.id); 
+		
+			if (remainingSockets.length > 0) { //je check s'il reste d'autres sockets dans la salle après la déconnexion
+				updatedConnections[key] = remainingSockets; // Si oui jmet à jour updatedConnections avec la liste filtrée des sockets restants dans la salle
 
 				remainingSockets.forEach((recipient) => {
-					io.to(recipient).emit("userLeft", socket.id);
+					io.to(recipient).emit("userLeft", socket.id); // j'emit aux autres sockets chaque user qui viennent de se deco. 
+					//Je traiterai cette emission coté client notamment pour gérer l'affichage des users connectés dans la room
 				});
 			} else {
 				console.log(`All users have left the room: ${key}`);
 			}
 		}
 
-		connections = updatedConnections;
+		connections = updatedConnections; // jmet à jour les connections coté server
 
 	});
 
@@ -340,6 +343,8 @@ app.post('/login', (req, res) => {
 	});
 });
 
+
+//verif token
 app.use('/adminPanel', authenticateToken); // "/adminPanel" sera dans ma request dans athenticateToken
 
 

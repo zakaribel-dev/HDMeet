@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 
-// CONTEXT = permet de wrapper des composants enfants pour pouvoir leurs transmettre des states ou methodes du coup plus besoin de transmettre tout ça via props à chaque niveau 
+// CONTEXT = permet de wrapper des composants enfants pour pouvoir leurs transmettre des states ou methodes du coup,
+// plus besoin de transmettre tout ça via props à chaque niveau 
 const AuthContext = createContext();
 
 // du coup mon authProvider va être utilisé en tant que wrapper pour gérer l'état d'authentification des composant enfants
