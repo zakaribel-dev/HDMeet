@@ -8,11 +8,9 @@ import Rodal from "rodal"
 import "rodal/lib/rodal.css"
 import axios from "axios"
 import "../../style/Admin.css"
-import { jwtDecode } from 'jwt-decode'
+import { jwtDecode } from "jwt-decode"
 
 class AdminPanel extends Component {
-
-  
   constructor(props) {
     super(props)
     this.state = {
@@ -29,34 +27,35 @@ class AdminPanel extends Component {
       showPasswordInputForCreate: false,
       password: "",
       newPassword: "",
-    }  
+    }
   }
   componentDidMount() {
-    this.fetchUsers();
-    const adminEmail = localStorage.getItem('adminEmail');
-    this.setState({ userEmail: adminEmail });
-    message.info('Bienvenue dans votre espace administrateur')
-    const authToken = localStorage.getItem('authToken');
+    this.fetchUsers()
+    const adminEmail = localStorage.getItem("adminEmail")
+    this.setState({ userEmail: adminEmail })
+    message.info("Bienvenue dans votre espace administrateur")
+    const authToken = localStorage.getItem("authToken")
 
-if (authToken) {
-  try {
-    const decodedToken = jwtDecode(authToken);
-    console.log('Decoded Token:', decodedToken);
-    const currentTime = Math.floor(Date.now() / 1000);
-    if (decodedToken.exp && decodedToken.exp < currentTime) {
-      console.log('Token has expired. Logging out.');
-      this.handleLogout(); 
-      return;
-    }  } catch (error) {
-    console.error('Error decoding JWT:', error);
-  }
-}
+    if (authToken) {
+      try {
+        const decodedToken = jwtDecode(authToken)
+        console.log("Decoded Token:", decodedToken)
+        const currentTime = Math.floor(Date.now() / 1000)
+        if (decodedToken.exp && decodedToken.exp < currentTime) {
+          localStorage.removeItem("authToken")
+          window.location.href = "/authAdmin?sessionExpired=true"
+          return
+        }
+      } catch (error) {
+        console.error("Error decoding JWT:", error)
+      }
+    }
   }
 
   handleLogout = () => {
-    localStorage.removeItem('authToken');
-    window.location.href = "/authAdmin";
-  };
+    localStorage.removeItem("authToken")
+    window.location.href = "/authAdmin"
+  }
 
   fetchUsers = () => {
     axios
@@ -121,7 +120,7 @@ if (authToken) {
     const newRole = e.target.value
     const showPasswordInputForUpdate = newRole === "ADMIN"
     this.setState({ role: newRole, showPasswordInputForUpdate })
-  
+
     console.log("Nouveau rôle sélectionné :", newRole)
   }
 
@@ -159,7 +158,7 @@ if (authToken) {
       })
       .then((response) => {
         message.success("Rôle mis à jour !")
-        console.log("new pass " +newPassword)
+        console.log("new pass " + newPassword)
         this.fetchUsers()
       })
       .catch((error) => {
@@ -221,13 +220,34 @@ if (authToken) {
           />
         </Link>
         <div className="content">
-   
-          <p style={{color:'black', position:'absolute', top:'1%',right:'15%'}} >  <span className="online-indicator"></span> <b>{this.state.userEmail}</b>  </p>
+          <p
+            style={{
+              color: "black",
+              position: "absolute",
+              top: "1%",
+              right: "15%",
+            }}
+          >
+            {" "}
+            <span className="online-indicator"></span>{" "}
+            <b>{this.state.userEmail}</b>{" "}
+          </p>
 
-          <Button style={{backgroundColor:'red', color:'white', position:'absolute', top:'0',right:'0'}} onClick={this.handleLogout} variant="contained">
+          <Button
+            style={{
+              backgroundColor: "red",
+              color: "white",
+              position: "absolute",
+              top: "0",
+              right: "0",
+            }}
+            onClick={this.handleLogout}
+            variant="contained"
+          >
             Se déconnecter
           </Button>
-          <br /><br />
+          <br />
+          <br />
           <Button onClick={this.toggleCreateUserForm} variant="contained">
             {showCreateUserForm
               ? "Cacher le formulaire"

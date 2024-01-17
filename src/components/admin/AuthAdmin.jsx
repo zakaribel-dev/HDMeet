@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import axios from "axios"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@material-ui/core"
@@ -12,6 +12,16 @@ const AuthAdmin = () => {
   const { login } = useAuth() // fonction login de authContext
   const navigate = useNavigate()
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionExpired = params.get('sessionExpired');
+
+    if (sessionExpired === 'true') {
+      message.warning('Votre session a expiré. Veuillez vous reconnecter.');
+    }
+  }, []);
+  
+  
   const handleAdminEmailChange = (e) => {
     setAdminEmail(e.target.value.toLowerCase())
   }
