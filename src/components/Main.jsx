@@ -80,8 +80,6 @@ class Main extends Component {
       isAdmin: false,
       loadingCamera: true,
       isSpeakingStates: {},
-      recording: false,
-      recordingPath: null,
     }
 
     axios
@@ -271,29 +269,6 @@ class Main extends Component {
       console.error("Erreur lors de la configuration de l'analyseur audio:", error);
     }
   }
-  
-  startRecording = () => {
-    const path = "./recordings"; 
-    socket.emit('startRecording', path);
-  
-    this.setState({
-      recording: true,
-      recordingPath: path,
-    });
-  };
-
-  stopRecording = () => {
-    const { recordingPath } = this.state;
-  
-    if (recordingPath) {
-      socket.emit('stopRecording', recordingPath);
-  
-      this.setState({
-        recording: false,
-        recordingPath: null,
-      });
-    }
-  };
   
 
   // partage d'ecran
@@ -645,6 +620,8 @@ class Main extends Component {
         }
         this.setState({ isSpeakingStates }); // le isSpeakingStates d'origine prendra la valeur de la copie traitée dans ma condition plus haut 
 
+
+        
         this.setState((prevState) => ({
           usernames: {
             ...prevState.usernames,
@@ -1047,12 +1024,6 @@ class Main extends Component {
                 >
                   Copier le lien conférence
                 </Button>
-                <button onClick={this.startRecording} disabled={this.state.recording}>
-                  Démarrer l'enregistrement
-                </button>
-                <button onClick={this.stopRecording} disabled={!this.state.recording}>
-                  Arrêter l'enregistrement
-                </button>
               </div>
 
               <Row

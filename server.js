@@ -11,8 +11,6 @@ let xss = require("xss")
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
 const { authenticateToken } = require('./middleware/Auth'); 
-const RecordRTC = require('recordrtc');
-const fs = require('fs');
 
 let server = http.createServer(app)
 let io = require('socket.io')(server, {
@@ -45,36 +43,9 @@ sanitizeString = (str) => {
 
 connections = {}
 messages = {}
-let roomUsers = {}
-let recordings = {}
-
+let roomUsers = {};
 
 io.on('connection', (socket) => {
-
-	socket.on('startRecording', (path) => {
-		const mediaStream = getCombinedMediaStream(); 
-		const options = {
-			type: 'video', 
-			mimeType: 'video/webm', 
-			bitsPerSecond: 128000, 
-			frameInterval: 30, 
-			recorderType: RecordRTC.WhammyRecorder, 
-		};
-	
-		recordings[path] = RecordRTC(mediaStream, options);
-		recordings[path].startRecording();
-	});
-	
-	socket.on('stopRecording', (path) => {
-		recordings[path].stopRecording((audioVideoWebMURL) => {
-			const filePath = `./recordings/${Date.now()}.webm`; //
-			fs.writeFileSync(filePath, recordings[path].blob);
-	
-			delete recordings[path];
-	
-			io.to(path).emit('recordingComplete', filePath);
-		});
-	});
 
 	socket.on('joinCall', (path, username, email) => {
 
