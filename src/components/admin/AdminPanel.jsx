@@ -45,7 +45,7 @@ if (authToken) {
     const currentTime = Math.floor(Date.now() / 1000);
     if (decodedToken.exp && decodedToken.exp < currentTime) {
       console.log('Token has expired. Logging out.');
-      this.handleLogout();  // Assuming you have a handleLogout method
+      this.handleLogout(); 
       return;
     }  } catch (error) {
     console.error('Error decoding JWT:', error);
@@ -55,7 +55,7 @@ if (authToken) {
 
   handleLogout = () => {
     localStorage.removeItem('authToken');
-    window.location.href = "/";
+    window.location.href = "/authAdmin";
   };
 
   fetchUsers = () => {

@@ -11,6 +11,8 @@ let xss = require("xss")
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
 const { authenticateToken } = require('./middleware/Auth'); 
+const RecordRTC = require('recordrtc');
+const fs = require('fs');
 
 let server = http.createServer(app)
 let io = require('socket.io')(server, {
@@ -43,9 +45,40 @@ sanitizeString = (str) => {
 
 connections = {}
 messages = {}
-let roomUsers = {};
+let roomUsers = {}
+let recordings = {}
+
 
 io.on('connection', (socket) => {
+
+	socket.on('startRecording', (path) => {
+		const mediaStream = getCombinedMediaStream(); // Obtenez le MediaStream combiné de la conférence
+		const options = {
+			type: 'video', // Type de média à enregistrer (peut être 'video', 'audio', ou 'canvas')
+			mimeType: 'video/webm', // Format de fichier (peut être 'video/webm', 'audio/wav', etc.)
+			bitsPerSecond: 128000, // Débit binaire en bits par seconde (ajustez selon vos besoins)
+			frameInterval: 30, // Intervalle de capture d'image (ajustez selon vos besoins)
+			recorderType: RecordRTC.WhammyRecorder, // Type de recorder (WhammyRecorder pour WebM, StereoAudioRecorder pour audio)
+			// Ajoutez d'autres options selon vos besoins
+		};
+	
+		recordings[path] = RecordRTC(mediaStream, options);
+		recordings[path].startRecording();
+	});
+	
+	socket.on('stopRecording', (path) => {
+		// Arrêter l'enregistrement et sauvegarder le fichier
+		recordings[path].stopRecording((audioVideoWebMURL) => {
+			const filePath = `./recordings/${Date.now()}.webm`; // Choisir un chemin de stockage approprié
+			fs.writeFileSync(filePath, recordings[path].blob);
+	
+			// Réinitialiser l'enregistrement
+			delete recordings[path];
+	
+			// Envoyer le chemin du fichier enregistré aux clients
+			io.to(path).emit('recordingComplete', filePath);
+		});
+	});
 
 	socket.on('joinCall', (path, username, email) => {
 
