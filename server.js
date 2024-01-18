@@ -42,7 +42,6 @@ sanitizeString = (str) => {
 }
 
 connections = {}
-messages = {}
 let roomUsers = {};
 
 io.on('connection', (socket) => {
@@ -92,14 +91,12 @@ io.on('connection', (socket) => {
 		sender = sanitizeString(sender); // idem
 
 		for (const key in connections) {
-			if (connections[key].includes(socket.id)) {
+			if (connections[key].includes(socket.id)) { // je vérifie dans quel room mon socket est présent
 
-				messages[key] = messages[key] || [];
-
-				messages[key].push({ sender, data, 'socket-id-sender': socket.id });
+			
 				connections[key].forEach((key) => {
 					io.to(key).emit("chat-message", data, sender, socket.id);
-				});
+				})
 				break;
 			}
 		}
