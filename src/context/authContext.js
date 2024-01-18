@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
   // je gere le logout directement dans adminPanel..
 
   // grâce à ce que je return jvais pouvoir recuperer token, isAuthenticated et login en faisant un useAuth dans mes autres components
-  // je convertis token en boleen pour set isAuthenticated comme il se doit
+  // je convertis token en booleen pour set isAuthenticated comme il se doit
   return (    
     <AuthContext.Provider value={{ token, isAuthenticated: Boolean(token), login}}>   
       {children}
