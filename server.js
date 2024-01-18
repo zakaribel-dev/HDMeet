@@ -22,7 +22,7 @@ let io = require('socket.io')(server, {
 
 app.use(cors({
 	origin: "http://localhost:8000", 
-	methods: ["GET", "POST","PUT"]
+	methods: ["GET", "POST","PUT","DELETE"]
   }));
   
 app.use(bodyParser.json())

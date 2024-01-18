@@ -711,7 +711,8 @@ class Main extends Component {
         })
 
         if (id === socketId) { // si c'est moi
-          for (let id2 in connections) {  // id2 = les autres users déjà présents dans la room
+          for (let id2 in connections) {  
+            console.log(connections)// id2 = les autres users déjà présents dans la room
    // si les autres utilisateurs déjà present dans la room ont la meme id que moi bah je fais sauter l'itération(juste pour etre sur)
             if (id2 === socketId) continue 
 
