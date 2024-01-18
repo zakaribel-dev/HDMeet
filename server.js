@@ -92,9 +92,9 @@ io.on('connection', (socket) => {
 
 		for (const key in connections) {
 			if (connections[key].includes(socket.id)) { // je vérifie dans quel room mon socket est présent
-
 			
-				connections[key].forEach((key) => {
+				connections[key].forEach((key) => { // dans la room de mon socket id j'emit les messages et le sender ainsi que le socket.id
+					// car coté front je vérifie que la personne qui envoie le message n'est pas moi avant d'emettre la notification et le son
 					io.to(key).emit("chat-message", data, sender, socket.id);
 				})
 				break;

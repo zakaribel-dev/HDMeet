@@ -835,10 +835,14 @@ class Main extends Component {
   }
 
   sendMessage = () => {
-    socket.emit("chat-message", this.state.message, this.state.username) // j'emit les states username et message 
-    // une fois le message envoyé, jrefou l'input à vide et je laisse this.username as sender of course 
-    this.setState({ message: "", sender: this.state.username }) 
+    if (this.state.message.trim() !== "") {
+      // Emit the chat message
+      socket.emit("chat-message", this.state.message, this.state.username);// j'emit les states username et message 
+      // une fois le message envoyé, jrefou l'input à vide et je laisse this.username as sender of course 
+      this.setState({ message: "", sender: this.state.username }) 
+    }
   }
+
 
   copyConfLink = () => {
     let text = window.location.href
