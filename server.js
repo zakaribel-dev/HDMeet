@@ -333,7 +333,7 @@ app.post('/login', (req, res) => {
 
 			if (passwordMatch) {
 				// le password a match alors je genere un token
-				const token = jwt.sign({ email: user.email, role: user.role }, process.env.JWT_SECRET,  { expiresIn: "30" });
+				const token = jwt.sign({ email: user.email, role: user.role }, process.env.JWT_SECRET,  { expiresIn: '30m' });
 				console.log('Token généré :', token);
 				res.json({ token });
 			  } else {

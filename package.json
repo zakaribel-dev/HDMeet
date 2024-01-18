@@ -24,7 +24,7 @@
     "jsonwebtoken": "^9.0.2",
     "jwt-decode": "^4.0.0",
     "mysql2": "^3.7.0",
-    "nodemon": "^3.0.2",
+    "nodemon": "^3.0.3",
     "react": "^18.2.0",
     "react-app-rewired": "^2.2.1",
     "react-bootstrap": "^2.9.2",
@@ -69,6 +69,7 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^4.15.1"

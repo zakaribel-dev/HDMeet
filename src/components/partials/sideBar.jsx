@@ -4,7 +4,6 @@ import { Button } from '@material-ui/core';
 class Sidebar extends Component {
 
 
-
     render() {
         const { usernames, isSidebarOpen, toggleSidebar } = this.props;
         const sidebarClass = isSidebarOpen ? "sidebar open" : "sidebar";
