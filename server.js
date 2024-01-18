@@ -71,12 +71,6 @@ io.on('connection', (socket) => {
 			// j'envoie le socket actuel, la liste des sockets id  dans la room et l'username
 			io.to(connections[path][i]).emit("user-joined", socket.id, connections[path], username, email);
 		}
-		if (messages[path] !== undefined) {
-			for (let i = 0; i < messages[path].length; i++) {
-				io.to(socket.id).emit("chat-message", messages[path][i]['data'],
-					messages[path][i]['sender'], messages[path][i]['socket-id-sender'])
-			}
-		}
 
 	})
 
