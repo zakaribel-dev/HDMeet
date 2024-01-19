@@ -10,8 +10,8 @@
 
 .custom-message { 
   position: fixed;
-  top: 35px; 
-  right: 125px;
+  top: 2%; 
+  right: 20%;
   z-index: 9999; 
   color: black;
   font-weight: bolder ;
@@ -133,6 +133,7 @@
  background-color: #8EC8F2  !important;
  color:  rgb(20, 20, 61) !important;
  font-weight: 600  !important;
+ padding: 5px !important;
 }	
 
 .custom-message-link{
