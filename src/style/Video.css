@@ -128,8 +128,8 @@
 
 .copy{
  position: absolute !important;
- right: 60% !important;
- top: 0% !important;
+ right: 0% !important;
+ top: 8% !important;
  background-color: #8EC8F2  !important;
  color:  rgb(20, 20, 61) !important;
  font-weight: 600  !important;
@@ -240,9 +240,10 @@ video[data-socket].speaking {
 
 .button-show {
   position: absolute !important;
-  width: 250px !important;
+  width: 150px !important;
   top: 0 !important;
-  left: 60% !important;
+  right:0 !important;
+  padding: 0 !important;
 }
 
 .sidebar {

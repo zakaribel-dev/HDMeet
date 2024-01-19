@@ -27,6 +27,7 @@ class ControlBar extends Component {
       onOpenChat,
       isSidebarOpen,
       toggleSidebar,
+      usernames,
     } = this.props;
 
     return (
@@ -81,7 +82,7 @@ class ControlBar extends Component {
           variant="contained"
 
         >
-          Utilisateurs connectés
+          Utilisateurs connectés ({Object.keys(usernames).length})
         </Button>
 
         <IconButton  onClick={this.props.onRequestSpeech}><PanToolIcon/></IconButton>
