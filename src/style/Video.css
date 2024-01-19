@@ -137,8 +137,8 @@
 
 .custom-message-link{
   position: absolute !important;
-  top: 45px !important;
-  right: 64% !important;
+  top: 2% !important;
+  right: 10% !important;
   color: black !important;
   font-weight: bolder !important;
 }
