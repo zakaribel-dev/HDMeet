@@ -706,8 +706,13 @@ class Main extends Component {
             }
 
           }
-
-          connections[socketListId].addStream(window.localStream)
+            
+          if (window.localStream instanceof MediaStream) {
+            // Ajout du stream à RTCPeerConnection..
+            connections[socketListId].addStream(window.localStream);
+          } else {
+            message.error('Votre caméra n\'est pas disponible !!');
+          }        
         })
 
         if (id === socketId) { // si c'est moi
