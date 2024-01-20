@@ -559,7 +559,7 @@ class Main extends Component {
       }
     })
 
-      socket.on("chat-message", this.addMessage)
+      socket.on("chat-message", this.addMessage) // je recupere les messages emit coté serveur pour les display 
 
       socket.on("userLeft", (id) => {
         let video = document.querySelector(`[data-socket="${id}"]`)
