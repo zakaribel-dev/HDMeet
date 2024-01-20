@@ -39,7 +39,6 @@ class AdminPanel extends Component {
     if (authToken) {
       try {
         const decodedToken = jwtDecode(authToken)
-        console.log("Decoded Token:", decodedToken)
         const currentTime = Math.floor(Date.now() / 1000)
         if (decodedToken.exp && decodedToken.exp < currentTime) {
           localStorage.removeItem("authToken")
@@ -145,7 +144,6 @@ class AdminPanel extends Component {
   }
 
   handleUpdateRole = (e) => {
-    // Fonction pour gérer la mise à jour du rôle de l'utilisateur en cours de mise à jour
     e.preventDefault()
     const { role, newPassword } = this.state
     const userEmail = this.state.selectedUserForRoleUpdate.email
@@ -158,7 +156,6 @@ class AdminPanel extends Component {
       })
       .then((response) => {
         message.success("Rôle mis à jour !")
-        console.log("new pass " + newPassword)
         this.fetchUsers()
       })
       .catch((error) => {
@@ -167,7 +164,6 @@ class AdminPanel extends Component {
   }
 
   handleDeleteUser = (email) => {
-    // Fonction pour supprimer un utilisateur
     axios
       .delete(`http://localhost:4001/deleteUser/${email}`)
       .then(() => {
@@ -180,7 +176,6 @@ class AdminPanel extends Component {
   }
 
   formatDate = (dateStr) => {
-    // Fonction pour formater une date en format français
     const options = {
       year: "numeric",
       month: "2-digit",

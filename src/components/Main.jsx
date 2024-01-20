@@ -225,14 +225,13 @@ class Main extends Component {
     }
   };
 
+  
   setupAudioAnalyser(stream, socketId) {
-    console.log(`Configuration de l'analyseur audio pour l'utilisateur ${socketId}`);
-
     // Vérifier si le flux contient des pistes audio
     const audioTracks = stream.getAudioTracks();
     if (audioTracks.length === 0) {
       console.error("Le flux de médias ne contient pas de piste audio.");
-      return; // Sortir de la fonction si aucune piste audio n'est présente
+      return; // Sortir de la fonction si mic muted
     }
   
     try {
@@ -555,7 +554,7 @@ class Main extends Component {
         this.setState({ usernames: updatedUsernames })
       } else {
         console.log(
-          "Pas encore de user ou ya comme une couille dans l'paté.."
+          "Pas encore de user ici.."
         )
       }
     })
