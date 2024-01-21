@@ -784,10 +784,11 @@ class Main extends Component {
     try {
       let tracks = this.myVideo.current.srcObject.getTracks()
       tracks.forEach((track) => track.stop())
+      window.location.href = "/"
     } catch (e) {
       console.log(e)
     }
-    window.location.href = "/"
+  
   }
 
   openChat = () => this.setState({ showModal: true, newmessages: 0 })
@@ -842,7 +843,7 @@ class Main extends Component {
     if (this.state.message.trim() !== "") {
       
       socket.emit("chat-message", this.state.message, this.state.username);// j'emit les states username et message 
-      // une fois le message envoyé, jrefou l'input à vide et je laisse this.username as sender of course 
+      // une fois le message envoyé, jremet l'input à vide et je laisse this.username as sender of course 
       this.setState({ message: "", sender: this.state.username }) 
     }
   }
