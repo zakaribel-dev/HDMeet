@@ -10,7 +10,7 @@ const bcrypt = require('bcrypt');
 let xss = require("xss")
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
-const { authenticateToken } = require('./middleware/Auth'); 
+const { authenticateToken } = require('./middleware/Auth');
 
 let server = http.createServer(app)
 let io = require('socket.io')(server, {
@@ -21,10 +21,10 @@ let io = require('socket.io')(server, {
 });
 
 app.use(cors({
-	origin: "http://localhost:8000", 
-	methods: ["GET", "POST","PUT","DELETE"]
-  }));
-  
+	origin: "http://localhost:8000",
+	methods: ["GET", "POST", "PUT", "DELETE"]
+}));
+
 app.use(bodyParser.json())
 
 
@@ -46,7 +46,15 @@ let roomUsers = {};
 
 io.on('connection', (socket) => {
 
+	socket.on('kick-user', (userId) => {
+		// j'emet l'évent spécifiquement à l'user qui doit être kicked
+		io.to(userId).emit('user-kicked');
+
+	});
+
+
 	socket.on('joinCall', (path, username, email) => {
+
 
 		socket.username = username;
 		console.log(` ${username} a rejoin avec l'ID: ${socket.id} dans la room : ${path}`);
@@ -57,7 +65,6 @@ io.on('connection', (socket) => {
 		}
 
 		connections[path].push(socket.id); // je stock des sockets id dans la room . connections va contenir la room et la liste des socket id qui sont dans la room
-
 
 		if (!roomUsers[path]) { // si pas d'users  dans la room -> tableau des users dans la room vide
 			roomUsers[path] = [];
@@ -92,7 +99,7 @@ io.on('connection', (socket) => {
 
 		for (const key in connections) {
 			if (connections[key].includes(socket.id)) { // je vérifie dans quel room mon socket est présent
-			
+
 				connections[key].forEach((key) => { // dans la room de mon socket id j'emit les messages et le sender 
 					//ainsi que le socket.id car coté front je vérifie que la personne qui envoie le message n'est pas moi même avant d'emettre la notification et le son de la notif
 					io.to(key).emit("chat-message", data, sender, socket.id);
@@ -104,6 +111,8 @@ io.on('connection', (socket) => {
 
 
 	socket.on('disconnect', () => {
+
+
 		console.log(`User ${socket.username} disconnected with ID ${socket.id}`);
 
 		const updatedConnections = {};
@@ -111,8 +120,8 @@ io.on('connection', (socket) => {
 		for (const key in connections) {
 			// filter les id de sockets de la salle actuelle (déterminée par lindex) 
 			//pour exclure l'id du socket qui vient de se déco
-			const remainingSockets = connections[key].filter(socketId => socketId !== socket.id); 
-		
+			const remainingSockets = connections[key].filter(socketId => socketId !== socket.id);
+
 			if (remainingSockets.length > 0) { //je check s'il reste d'autres sockets dans la salle après la déconnexion
 				updatedConnections[key] = remainingSockets; // Si oui jmet à jour updatedConnections avec la liste filtrée des sockets restants dans la salle
 
@@ -123,11 +132,13 @@ io.on('connection', (socket) => {
 			} else {
 				console.log(`All users have left the room: ${key}`);
 			}
+
 		}
 
-		connections = updatedConnections; // jmet à jour les connections coté server
+
 
 	});
+
 
 })
 
@@ -137,10 +148,10 @@ io.on('connection', (socket) => {
 const mysql = require('mysql2');
 
 const connection = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE
+	host: process.env.DB_HOST,
+	user: process.env.DB_USER,
+	password: process.env.DB_PASSWORD,
+	database: process.env.DB_DATABASE
 });
 
 connection.connect((err) => {
@@ -291,13 +302,13 @@ app.delete('/deleteUser/:email', (req, res) => {
 
 app.post('/login', (req, res) => {
 	const { email, password } = req.body;
-  
+
 	app.use(session({
 		secret: process.env.JWT_SECRET,
 		resave: true,
 		saveUninitialized: true,
 	}));
-	
+
 	if (!email || !password) {
 		return res.status(400).json({ error: 'Email et mot de passe sont requis.' });
 	}
@@ -323,12 +334,12 @@ app.post('/login', (req, res) => {
 
 			if (passwordMatch) {
 				// le password a match alors je genere un token
-				const token = jwt.sign({ email: user.email, role: user.role }, process.env.JWT_SECRET,  { expiresIn: '30m' });
+				const token = jwt.sign({ email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '30m' });
 				console.log('Token généré :', token);
 				res.json({ token });
-			  } else {
+			} else {
 				res.status(401).json({ error: 'Mot de passe incorrect.' });
-			  }
+			}
 		});
 	});
 });

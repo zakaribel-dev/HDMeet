@@ -63,6 +63,7 @@ class Main extends Component {
       screen: false,
       showModal: false,
       screenAvailable: false,
+      socketId: '',
       messages: [],
       message: "",
       newmessages: 0,
@@ -80,7 +81,9 @@ class Main extends Component {
       isAdmin: false,
       loadingCamera: true,
       isSpeakingStates: {},
+      
     }
+        console.log('currentEmail:' + this.state.currentUserEmail)
 
     axios
       .get("http://localhost:4001/users")
@@ -543,6 +546,7 @@ class Main extends Component {
       this.state.currentUserEmail
     )
     socketId = socket.id
+    this.setState({ socketId });
 
     socket.on("update-user-list", (users) => {
       if (users) {
@@ -599,6 +603,14 @@ class Main extends Component {
 
       socket.on("user-joined", (id, clients, username, email) => {
         console.log(`Utilisateur rejoint: ${username}, ID: ${id}`);
+
+     
+
+  // seul l'user qui s'est fait kick va listen " user-kicked" car c'est emit depuis server spécifiquement à la personne kicked et le reste jte fais pas un dessin       
+        socket.on("user-kicked", () => {
+          window.location.href = "/";  
+          socket.disconnect();
+        });
 
         if (id !== socketId) {
           this.playUserConnectedSound()
@@ -747,6 +759,12 @@ class Main extends Component {
     })
   }
 
+
+kickUser = (userId) => {
+  socket.emit("kick-user", userId); // j'envoie au serveur l'id du mal aimé à jarter
+};
+
+
   handleVideoClick = (event) => {
     const videoElement = event.target
     if (videoElement.requestFullscreen) {
@@ -815,29 +833,33 @@ class Main extends Component {
   handleEmail = (e) => {
     this.setState({ currentUserEmail: e.target.value })
   }
-
   handleSubmit = (event) => {
-    event.preventDefault()
-
-    const { currentUserEmail, authorizedUsers } = this.state
-
-    let isAuthorized = false
-
+    event.preventDefault();
+  
+    const { currentUserEmail, authorizedUsers } = this.state;
+  
+    let isAuthorized = false;
+    let isAdmin = false;
+  
     for (let i = 0; i < authorizedUsers.length; i++) {
       if (authorizedUsers[i].email === currentUserEmail) {
-        isAuthorized = true
-        break
+        isAuthorized = true;
+        if (authorizedUsers[i].role.includes('ADMIN')) {
+          isAdmin = true;
+        }
+        break;
       }
     }
-
+  
     if (isAuthorized) {
-      this.connect()
+      this.setState({ isAdmin }, () => {
+        this.connect();
+      });
     } else {
-      message.error(
-        "Hop hop hop, vous n'êtes pas autorisé à entrer ici, allez zou!"
-      )
+      message.error("Hop hop hop, vous n'êtes pas autorisé à entrer ici, allez zou!");
     }
-  }
+  };
+  
 
   sendMessage = () => {
     if (this.state.message.trim() !== "") {
@@ -1059,13 +1081,16 @@ class Main extends Component {
                 ></video>
               </Row>
 
-              <div className="video-chat-container">
-                <Sidebar
-                  usernames={this.state.usernames}
-                  isSidebarOpen={this.state.isSidebarOpen}
-                  toggleSidebar={this.toggleSidebar}
-                />
-              </div>
+                   <div className="video-chat-container">
+                      <Sidebar
+                    usernames={this.state.usernames}
+                    isSidebarOpen={this.state.isSidebarOpen}
+                    toggleSidebar={this.toggleSidebar}
+                    kickUser={this.kickUser}
+                    isAdmin={this.state.isAdmin} 
+                    socketId={this.state.socketId} 
+                      />
+                     </div>
             </div>
           </div>
         )}
