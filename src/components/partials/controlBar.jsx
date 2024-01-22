@@ -59,7 +59,7 @@ class ControlBar extends Component {
             border: "none", 
             position: "absolute",
             top: "5%",
-            left: "30%",
+            left: "26%",
           }}
           onClick={this.handleInfoButtonClick}
         >
