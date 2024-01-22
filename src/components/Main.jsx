@@ -83,8 +83,7 @@ class Main extends Component {
       isSpeakingStates: {},
       
     }
-        console.log('currentEmail:' + this.state.currentUserEmail)
-
+    
     axios
       .get("http://localhost:4001/users")
       .then((response) => {
@@ -106,7 +105,9 @@ class Main extends Component {
   
   handleBeforeUnload = () => { // si un user refresh la page on trigger une emission socket pour déco l'user (car de base ça a un comportement chiant (duplication user dans la room etc..
     // Donc je prefere etre radical et déco directement l'utilisateur qui devra revenir dans la room manuellement))
+    if (socket) {
     socket.emit("refreshingPage");
+    }
   };
 
   toggleSidebar = () => {
