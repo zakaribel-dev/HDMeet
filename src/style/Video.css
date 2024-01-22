@@ -110,7 +110,7 @@
   z-index: 100 !important;
   width: 100% !important;
   height: auto !important; 
-  padding: 1% !important;
+  padding: 2% !important;
   background-color: #f1eeee!important;
   color: white !important;
   text-align: center !important;
@@ -143,6 +143,14 @@
   font-weight: bolder !important;
 }
 
+.sidebar .smallContainer ul {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  padding: 0 !important;
+  list-style: none !important;
+  margin-left: 35% !important;
+}
 .newConf {
 position: absolute !important;
 right: 10% !important;

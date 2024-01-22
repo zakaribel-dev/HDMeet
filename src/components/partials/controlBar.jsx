@@ -1,19 +1,19 @@
-import React, { Component } from "react";
-import { IconButton, Badge, Typography, Button } from "@material-ui/core";
-import VideocamIcon from "@material-ui/icons/Videocam";
-import VideocamOffIcon from "@material-ui/icons/VideocamOff";
-import MicIcon from "@material-ui/icons/Mic";
-import MicOffIcon from "@material-ui/icons/MicOff";
-import ScreenShareIcon from "@material-ui/icons/ScreenShare";
-import StopScreenShareIcon from "@material-ui/icons/StopScreenShare";
-import CallEndIcon from "@material-ui/icons/CallEnd";
-import ChatIcon from "@material-ui/icons/Chat";
-import PanToolIcon from '@material-ui/icons/PanTool';
-
+import React, { Component } from "react"
+import { IconButton, Badge, Typography, Button } from "@material-ui/core"
+import VideocamIcon from "@material-ui/icons/Videocam"
+import VideocamOffIcon from "@material-ui/icons/VideocamOff"
+import MicIcon from "@material-ui/icons/Mic"
+import MicOffIcon from "@material-ui/icons/MicOff"
+import ScreenShareIcon from "@material-ui/icons/ScreenShare"
+import StopScreenShareIcon from "@material-ui/icons/StopScreenShare"
+import CallEndIcon from "@material-ui/icons/CallEnd"
+import ChatIcon from "@material-ui/icons/Chat"
+import PanToolIcon from "@material-ui/icons/PanTool"
 
 class ControlBar extends Component {
   render() {
-    const {  // mes states
+    const {
+      // mes states
       username,
       isVideoEnabled,
       isAudioEnabled,
@@ -28,16 +28,25 @@ class ControlBar extends Component {
       isSidebarOpen,
       toggleSidebar,
       usernames,
-    } = this.props;
+      currentUserEmail,
+    } = this.props
 
     return (
       <div className="btn-down">
-        <Typography variant="body1">
-          <span className="online-indicator"></span>
-          {username}
+        <Typography variant="body1" style={{position:'absolute', top:'2%',left:'10%'}}>
+          <span>
+            {" "}
+            Votre nom d'utilisateur: {username}{" "}
+            <span className="online-indicator"></span>
+            <br />
+            Votre adresse email : {currentUserEmail}
+          </span>
         </Typography>
 
-        <IconButton style={{ color: "rgb(20, 20, 61)" }} onClick={onToggleVideo}>
+        <IconButton
+          style={{ color: "rgb(20, 20, 61)" }}
+          onClick={onToggleVideo}
+        >
           {isVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
         </IconButton>
 
@@ -45,7 +54,10 @@ class ControlBar extends Component {
           <CallEndIcon />
         </IconButton>
 
-        <IconButton style={{ color: "rgb(20, 20, 61)" }} onClick={onToggleAudio}>
+        <IconButton
+          style={{ color: "rgb(20, 20, 61)" }}
+          onClick={onToggleAudio}
+        >
           {isAudioEnabled ? <MicIcon /> : <MicOffIcon />}
         </IconButton>
 
@@ -53,9 +65,9 @@ class ControlBar extends Component {
           <IconButton
             style={{ color: "rgb(20, 20, 61)" }}
             onClick={onToggleScreenShare}
-          > 
+          >
             {isScreenSharing ? <ScreenShareIcon /> : <StopScreenShareIcon />}
-          </IconButton> 
+          </IconButton>
         )}
 
         <Badge
@@ -72,24 +84,21 @@ class ControlBar extends Component {
         </Badge>
 
         <Button
-          className={`toggle-button ${
-            !isSidebarOpen ? "button-show" : ""
-          }`}
-          onClick={toggleSidebar} 
+          className={`toggle-button ${!isSidebarOpen ? "button-show" : ""}`}
+          onClick={toggleSidebar}
           style={{
             display: isSidebarOpen ? "none" : undefined,
           }}
           variant="contained"
-
         >
           Utilisateurs connectés ({Object.keys(usernames).length})
         </Button>
-
-        <IconButton  onClick={this.props.onRequestSpeech}><PanToolIcon/></IconButton>
-
+        <IconButton onClick={this.props.onRequestSpeech}>
+          <PanToolIcon />
+        </IconButton>
       </div>
-    );
+    )
   }
 }
 
-export default ControlBar;
+export default ControlBar

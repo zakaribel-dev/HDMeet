@@ -1,6 +1,5 @@
 import React, { Component } from "react"
 import { Button } from "@material-ui/core"
-import KickSVG from "../../assets/boot-out-fire-kick-out-firing-an-employee-svgrepo-com.svg"
 
 class Sidebar extends Component {
   render() {

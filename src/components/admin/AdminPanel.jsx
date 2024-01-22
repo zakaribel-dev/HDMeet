@@ -53,7 +53,7 @@ class AdminPanel extends Component {
 
   handleLogout = () => {
     localStorage.removeItem("authToken")
-    window.location.href = "/authAdmin"
+    window.location.href = "./"
   }
 
   fetchUsers = () => {
