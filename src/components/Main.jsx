@@ -100,6 +100,14 @@ class Main extends Component {
     this.getPermissions()
   }
 
+  componentDidMount() {
+    window.addEventListener("beforeunload", this.handleBeforeUnload);
+  }
+  
+  handleBeforeUnload = () => { // si un user refresh la page on trigger une emission socket pour déco l'user (car de base ça a un comportement chiant (duplication user dans la room etc..
+    // Donc je prefere etre radical et déco directement l'utilisateur qui devra revenir dans la room manuellement))
+    socket.emit("refreshingPage");
+  };
 
   toggleSidebar = () => {
     this.setState((prevState) => ({
@@ -539,6 +547,10 @@ class Main extends Component {
 
     socket.on("connect", () => {
 
+      socket.on("redirectToMainPage", () => {
+        window.location.href = "/"; 
+      });
+
     socket.emit(
       "joinCall",
       window.location.href,
@@ -630,7 +642,6 @@ class Main extends Component {
           isSpeakingStates[id] = false; // Initialise l'état de parole à false pour le nouvel user
         }
         this.setState({ isSpeakingStates }); // le isSpeakingStates d'origine prendra la valeur de la copie traitée dans ma condition plus haut 
-
 
         
         this.setState((prevState) => ({
@@ -852,6 +863,9 @@ kickUser = (userId) => {
     }
   
     if (isAuthorized) {
+      // Enregistrer les informations de l'utilisateur dans le stockage local
+      localStorage.setItem("currentUser", JSON.stringify({ email: currentUserEmail, isAdmin }));
+  
       this.setState({ isAdmin }, () => {
         this.connect();
       });

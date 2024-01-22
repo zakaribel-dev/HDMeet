@@ -51,11 +51,15 @@ io.on('connection', (socket) => {
 		io.to(userId).emit('user-kicked');
 
 	});
-
-
+	
 	socket.on('joinCall', (path, username, email) => {
 
-
+		socket.on("refreshingPage", () => {
+            // déco de la room si l'user refresh la page
+            socket.leave(path);
+            socket.emit("redirectToMainPage");
+		  });
+	
 		socket.username = username;
 		console.log(` ${username} a rejoin avec l'ID: ${socket.id} dans la room : ${path}`);
 		io.to(socket.id).emit('update-user-list', roomUsers[path]);
@@ -77,7 +81,6 @@ io.on('connection', (socket) => {
 			// j'envoie le socket actuel, la liste des sockets id  dans la room et l'username
 			io.to(connections[path][i]).emit("user-joined", socket.id, connections[path], username, email);
 		}
-
 	})
 
 
