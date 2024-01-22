@@ -549,7 +549,7 @@ class Main extends Component {
     socket.on("connect", () => {
 
       socket.on("redirectToMainPage", () => {
-        if(socket){ // si je fais pas cette condition j'ai une petite erreur qui s'affiche pendant 1 seconde 
+        if(socket){ // si je fais pas cette condition j'ai une petite erreur qui s'affiche pendant 1 seconde et fais chauffer mon cpu(??)
           socket.disconnect()
         }
         window.location.href = "/"; 
