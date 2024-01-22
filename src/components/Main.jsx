@@ -551,6 +551,8 @@ class Main extends Component {
       socket.on("redirectToMainPage", () => {
         if(socket){ // si je fais pas cette condition j'ai une petite erreur qui s'affiche pendant 1 seconde et fais chauffer mon cpu(??)
           socket.disconnect()
+          let tracks = this.myVideo.current.srcObject.getTracks()  // ke libere mes tracks pour les autres apps
+          tracks.forEach((track) => track.stop())
         }
         window.location.href = "/"; 
       });

@@ -53,13 +53,12 @@ class ControlBar extends Component {
             backgroundColor: "#2196F3",
             color: "white", 
             borderRadius: "5px", 
-            padding: "10px 15px", 
             margin: "5px", 
             cursor: "pointer", 
             border: "none", 
             position: "absolute",
-            top: "5%",
-            left: "26%",
+            top: "8%",
+            left: "15%",
           }}
           onClick={this.handleInfoButtonClick}
         >
