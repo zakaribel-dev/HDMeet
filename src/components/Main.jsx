@@ -549,6 +549,9 @@ class Main extends Component {
     socket.on("connect", () => {
 
       socket.on("redirectToMainPage", () => {
+        if(socket){ // si je fais pas cette condition j'ai une petite erreur qui s'affiche pendant 1 seconde 
+          socket.disconnect()
+        }
         window.location.href = "/"; 
       });
 
@@ -772,9 +775,9 @@ class Main extends Component {
   }
 
 
-kickUser = (userId) => {
-  socket.emit("kick-user", userId); // j'envoie au serveur l'id du mal aimé à jarter
-};
+  kickUser = (userId) => {
+    socket.emit("kick-user", userId); // j'envoie au serveur l'id du mal aimé à jarter
+  };
 
 
   handleVideoClick = (event) => {
