@@ -11,6 +11,16 @@ import ChatIcon from "@material-ui/icons/Chat"
 import PanToolIcon from "@material-ui/icons/PanTool"
 
 class ControlBar extends Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      showInfo: false,
+    }
+  }
+  handleInfoButtonClick = () => {
+    this.setState({ showInfo: !this.state.showInfo })
+  }
+
   render() {
     const {
       // mes states
@@ -29,19 +39,55 @@ class ControlBar extends Component {
       toggleSidebar,
       usernames,
       currentUserEmail,
+      isAdmin,
     } = this.props
 
     return (
       <div className="btn-down">
-        <Typography variant="body1" style={{position:'absolute', top:'2%',left:'10%'}}>
-          <span>
-            {" "}
-            Votre nom d'utilisateur: {username}{" "}
-            <span className="online-indicator"></span>
-            <br />
-            Votre adresse email : {currentUserEmail}
-          </span>
+        <Typography>
+          {username} <span className="online-indicator"></span>
         </Typography>
+
+        <Button
+          style={{
+            backgroundColor: "#2196F3",
+            color: "white", 
+            borderRadius: "5px", 
+            padding: "10px 15px", 
+            margin: "5px", 
+            cursor: "pointer", 
+            border: "none", 
+            position: "absolute",
+            top: "5%",
+            left: "30%",
+          }}
+          onClick={this.handleInfoButtonClick}
+        >
+            {this.state.showInfo ? 'Cacher mes Infos' : 'Afficher mes infos'}
+
+        </Button>
+
+        {/* Afficher le texte seulement si showInfo est vrai */}
+        {this.state.showInfo && (
+          <Typography
+            variant="body1"
+            style={{
+              position: "absolute",
+              top: "2%",
+              left: "10%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              justifyContent: "flex-start",
+            }}
+          >
+            <span>
+              Votre adresse email : {currentUserEmail}
+              <br />
+              Statut : {isAdmin ? "Administrateur" : "Utilisateur"}
+            </span>
+          </Typography>
+        )}
 
         <IconButton
           style={{ color: "rgb(20, 20, 61)" }}

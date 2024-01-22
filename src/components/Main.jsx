@@ -1005,6 +1005,7 @@ class Main extends Component {
               onRequestSpeech={this.handleRequestSpeech}
               usernames={this.state.usernames}
               currentUserEmail={this.state.currentUserEmail}
+              isAdmin={this.state.isAdmin} 
             />
             {/* je "hide" la modal si showModal est faux( c le cas par défaut of course*/}
             <Rodal visible={this.state.showModal} onClose={this.closeChat} customStyles={{borderRadius:'25px'}}>
