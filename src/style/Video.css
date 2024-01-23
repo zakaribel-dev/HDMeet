@@ -132,7 +132,6 @@
  top: 8% !important;
  background-color: #8EC8F2  !important;
  color:  rgb(20, 20, 61) !important;
- font-weight: 600  !important;
  padding: 5px !important;
 }	
 
@@ -237,7 +236,6 @@ video[data-socket].speaking {
   color: black !important;
   background-color: #8EC8F2  !important;
   color:   rgb(20, 20, 61) !important;
-  font-weight: 600  !important;
 }
 
 .video-chat-container {

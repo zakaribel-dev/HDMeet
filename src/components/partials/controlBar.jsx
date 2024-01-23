@@ -50,15 +50,16 @@ class ControlBar extends Component {
 
         <Button
           style={{
-            backgroundColor: "#2196F3",
-            color: "white", 
+            backgroundColor: "#8EC8F2",
+            color: "black", 
             borderRadius: "5px", 
             margin: "5px", 
             cursor: "pointer", 
             border: "none", 
             position: "absolute",
-            top: "8%",
+            top: "6%",
             left: "15%",
+            padding:'5px'
           }}
           onClick={this.handleInfoButtonClick}
         >
@@ -66,13 +67,12 @@ class ControlBar extends Component {
 
         </Button>
 
-        {/* Afficher le texte seulement si showInfo est vrai */}
         {this.state.showInfo && (
           <Typography
             variant="body1"
             style={{
               position: "absolute",
-              top: "2%",
+              top: "0%",
               left: "10%",
               display: "flex",
               flexDirection: "column",
