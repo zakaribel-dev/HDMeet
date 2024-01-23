@@ -63,7 +63,7 @@ class ControlBar extends Component {
           }}
           onClick={this.handleInfoButtonClick}
         >
-            {this.state.showInfo ? 'Cacher mes Infos' : 'Afficher mes infos'}
+            {this.state.showInfo ? 'cacher mes Infos' : 'mes infos'}
 
         </Button>
 
