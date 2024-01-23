@@ -235,7 +235,6 @@ video[data-socket].speaking {
 .toggle-button {
   color: black !important;
   background-color: #8EC8F2  !important;
-  color:   rgb(20, 20, 61) !important;
 }
 
 .video-chat-container {
