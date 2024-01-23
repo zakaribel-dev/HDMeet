@@ -2,12 +2,25 @@ import React, { Component } from "react"
 import { Button } from "@material-ui/core"
 
 class Sidebar extends Component {
+
+
+  handleKickUser = (userId, username) => {
+    const { kickUser } = this.props
+    const confirmKick = window.confirm(
+      `Voulez-vous vraiment virer ${username} ?`
+    )
+
+    if (confirmKick) {
+      kickUser(userId) 
+    }
+  }
+
+
   render() {
     const {
       usernames,
       isSidebarOpen,
       toggleSidebar,
-      kickUser,
       isAdmin,
       socketId,
     } = this.props
@@ -30,11 +43,15 @@ class Sidebar extends Component {
                 <span className="online-indicator"></span>
                 {username}
                 {isAdmin && userId !== socketId && (
-                  <Button onClick={() => kickUser(userId)} color="secondary">
+                  <Button
+                    onClick={() => this.handleKickUser(userId, username)}
+                    color="secondary"
+                  >
+                    {" "}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 576 512"
-                      style={{width:'20px'}}
+                      style={{ width: "20px" }}
                     >
                       <path
                         fill="#c94436"

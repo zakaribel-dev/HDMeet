@@ -164,6 +164,11 @@ class AdminPanel extends Component {
   }
 
   handleDeleteUser = (email) => {
+
+    const confirmDelete = window.confirm(`Voulez-vous vraiment supprimer l'utilisateur ${email} ?`);
+
+    if (confirmDelete) {
+
     axios
       .delete(`http://localhost:4001/deleteUser/${email}`)
       .then(() => {
@@ -173,6 +178,7 @@ class AdminPanel extends Component {
       .catch((error) => {
         message.error("Erreur lors de la suppression de l'utilisateur")
       })
+    }
   }
 
   formatDate = (dateStr) => {
