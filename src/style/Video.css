@@ -9,7 +9,7 @@
 
 
 .custom-message { 
-  position: fixed;
+  position: absolute;
   top: 2%; 
   right: 20%;
   z-index: 9999; 
