@@ -62,21 +62,24 @@ io.on('connection', (socket) => {
 	
 		socket.username = username;
 		console.log(` ${username} a rejoin avec l'ID: ${socket.id} dans la room : ${path}`);
-		io.to(socket.id).emit('update-user-list', roomUsers[path]);
 
 		if (connections[path] === undefined) { // sinon il m'enquiquine
 			connections[path] = [];
 		}
 
-		connections[path].push(socket.id); // je stock des sockets id dans la room . connections va contenir la room et la liste des socket id qui sont dans la room
+			connections[path].push(socket.id); // je stock des sockets id dans la room . connections va contenir la room et la liste des socket id qui sont dans la room
 
 		if (!roomUsers[path]) { // si pas d'users  dans la room -> tableau des users dans la room vide
 			roomUsers[path] = [];
 		}
+		
 		roomUsers[path].push({ id: socket.id, username, email });// roomUsers va contenir socket id et usernames (en gros les username présents dans la room)
 
+		socket.emit('update-user-list', roomUsers[path]);
+
 		// emit de la liste des users dans la room
-		io.to(path).emit('update-user-list', roomUsers[path]);
+		socket.broadcast.to(path).emit('update-user-list', roomUsers[path]);
+
 		for (let i = 0; i < connections[path].length; i++) {
 			// j'envoie le socket actuel, la liste des sockets id  dans la room et l'username
 			io.to(connections[path][i]).emit("user-joined", socket.id, connections[path], username, email);
@@ -115,10 +118,10 @@ io.on('connection', (socket) => {
 
 	socket.on('disconnect', () => {
 
-
 		console.log(`User ${socket.username} disconnected with ID ${socket.id}`);
 
-		const updatedConnections = {};
+		let updatedConnections = {};
+		let updatedRoomUsers = {};
 
 		for (const key in connections) {
 			// filter les id de sockets de la salle actuelle (déterminée par lindex) 
@@ -127,6 +130,7 @@ io.on('connection', (socket) => {
 
 			if (remainingSockets.length > 0) { //je check s'il reste d'autres sockets dans la salle après la déconnexion
 				updatedConnections[key] = remainingSockets; // Si oui jmet à jour updatedConnections avec la liste filtrée des sockets restants dans la salle
+				updatedRoomUsers[key] = roomUsers[key].filter(user => user.id !== socket.id); // je met à jour la liste des users dansla room
 
 				remainingSockets.forEach((recipient) => {
 					io.to(recipient).emit("userLeft", socket.id); // j'emit aux autres sockets chaque user qui viennent de se deco. 
@@ -138,7 +142,8 @@ io.on('connection', (socket) => {
 
 		}
 
-
+		connections = updatedConnections; // je met à jour les connections avec la maj en foonction des déco
+		roomUsers = updatedRoomUsers;  // je met à jour roomUsers avec la liste mise à jour en fonction des déco
 
 	});
 
