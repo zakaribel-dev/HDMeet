@@ -26,6 +26,15 @@ class Sidebar extends Component {
     } = this.props
     const sidebarClass = isSidebarOpen ? "sidebar open" : "sidebar"
 
+    const myUsername = usernames[socketId];
+
+    const otherUsernames = Object.entries(usernames) // la liste des usernames sans mon propre username
+      .filter(([userId]) => userId !== socketId)
+      .map(([userId, username]) => ({ userId, username }));
+  
+    const orderedUsernames = [{ userId: socketId, username: myUsername }, ...otherUsernames]; // tableau d'usernames avec le mien en premiere position
+  
+
     return (
       <div className={sidebarClass}>
         <Button
@@ -38,7 +47,7 @@ class Sidebar extends Component {
         <div className="smallContainer">
           <h3>Utilisateurs </h3>
           <ul>
-            {Object.entries(usernames).map(([userId, username], index) => (
+          {orderedUsernames.map(({ userId, username }, index) => (
               <li key={index}>
                 <span className="online-indicator"></span>
                  
