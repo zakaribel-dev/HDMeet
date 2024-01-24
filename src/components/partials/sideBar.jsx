@@ -36,18 +36,24 @@ class Sidebar extends Component {
           {isSidebarOpen ? "Cacher" : "Afficher"}
         </Button>
         <div className="smallContainer">
-          <h3>Utilisateurs :</h3>
+          <h3>Utilisateurs </h3>
           <ul>
             {Object.entries(usernames).map(([userId, username], index) => (
               <li key={index}>
                 <span className="online-indicator"></span>
-                {username}
-                {isAdmin && userId !== socketId && (
+                 
+                  {userId === socketId ? (
+                    <b>{username}</b>
+                  ) : (
+                    <span>{username}</span>)
+                  }      
+
+                   {isAdmin && userId !== socketId && (
                   <Button
                     onClick={() => this.handleKickUser(userId, username)}
                     color="secondary"
                   >
-                    {" "}
+                  
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 576 512"

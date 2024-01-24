@@ -130,7 +130,7 @@ io.on('connection', (socket) => {
 
 			if (remainingSockets.length > 0) { //je check s'il reste d'autres sockets dans la salle après la déconnexion
 				updatedConnections[key] = remainingSockets; // Si oui jmet à jour updatedConnections avec la liste filtrée des sockets restants dans la salle
-				updatedRoomUsers[key] = roomUsers[key].filter(user => user.id !== socket.id); // je met à jour la liste des users dansla room
+				updatedRoomUsers[key] = roomUsers[key].filter(user => user.id !== socket.id); // je met à jour la liste des users dansla room apres déco
 
 				remainingSockets.forEach((recipient) => {
 					io.to(recipient).emit("userLeft", socket.id); // j'emit aux autres sockets chaque user qui viennent de se deco. 
