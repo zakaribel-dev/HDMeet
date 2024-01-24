@@ -28,11 +28,15 @@ class Sidebar extends Component {
 
     const myUsername = usernames[socketId];
 
-    const otherUsernames = Object.entries(usernames) // la liste des usernames sans mon propre username
+
+// otherUsernames = liste des usernames sans mon propre username (object entries pour 
+// convertir objet contenant clé + valeur en tableau).
+    const otherUsernames = Object.entries(usernames) 
       .filter(([userId]) => userId !== socketId)
       .map(([userId, username]) => ({ userId, username }));
   
-    const orderedUsernames = [{ userId: socketId, username: myUsername }, ...otherUsernames]; // tableau d'usernames avec le mien en premiere position
+  // tableau d'usernames avec le mien en premiere position
+    const orderedUsernames = [{ userId: socketId, username: myUsername }, ...otherUsernames]; 
   
 
     return (
