@@ -61,7 +61,7 @@ io.on('connection', (socket) => {
 		  });
 	
 		socket.username = username;
-		console.log(` ${username} a rejoin avec l'ID: ${socket.id} dans la room : ${path}`);
+		console.log(` "${username}" a rejoin avec l'ID: ${socket.id} dans la room : ${path}`);
 
 		if (connections[path] === undefined) { // sinon il m'enquiquine
 			connections[path] = [];
@@ -118,7 +118,7 @@ io.on('connection', (socket) => {
 
 	socket.on('disconnect', () => {
 
-		console.log(`User ${socket.username} disconnected with ID ${socket.id}`);
+		console.log(`"${socket.username}" <- disconnected with ID ${socket.id}`);
 
 		let updatedConnections = {};
 		let updatedRoomUsers = {};
