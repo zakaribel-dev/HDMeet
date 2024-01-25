@@ -743,35 +743,36 @@ class Main extends Component {
           }        
         })
 
-        if (id === socketId) { // si c'est moi
-          for (let id2 in connections) {  
-            console.log(connections)// id2 = les autres users déjà présents dans la room
-   // si les autres utilisateurs déjà present dans la room ont la meme id que moi bah je fais sauter l'itération(juste pour etre sur)
-            if (id2 === socketId) continue 
+  //       if (id === socketId) { // si c'est moi
+  //         for (let id2 in connections) {  
+  //           console.log(connections)// id2 = les autres users déjà présents dans la room
+  //  // si les autres utilisateurs déjà present dans la room ont la meme id que moi bah je fais sauter l'itération(juste pour etre sur)
+  //           if (id2 === socketId) continue 
 
-            const connection = connections[id2]
+  //           const connection = connections[id2]
 
-            try {
-              connection.addStream(window.localStream)
-            } catch (e) {}
+  //           try {
+  //             connection.addStream(window.localStream)
+  //           } catch (e) {}
 
-            connection
-              .createOffer()
-              .then((description) =>
-                connection.setLocalDescription(description)
-              )
-              // localDescription va contnir des infos (sdp) sur les params de session (codec audio video etc..)
-              //obligé d'envoyer ces params pour la communication en webRTC
-              .then(() =>
-                socket.emit(
-                  "signal",
-                  id2,
-                  JSON.stringify({ sdp: connections[id].localDescription })
-                )
-              )
-              .catch((e) => console.log(e))
-          }
-        }
+  //           connection
+  //             .createOffer()
+  //             .then((description) =>
+  //               connection.setLocalDescription(description)
+  //             )
+  //             // localDescription va contnir des infos (sdp) sur les params de session (codec audio video etc..)
+  //             //obligé d'envoyer ces params pour la communication en webRTC
+  //             .then(() =>
+  //               socket.emit(
+  //                 "signal",
+  //                 id2,
+  //                 JSON.stringify({ sdp: connections[id].localDescription })
+  //               )
+  //             )
+  //             .catch((e) => console.log(e))
+  //         }
+  //       }
+  
       })
     })
   }
