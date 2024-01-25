@@ -355,7 +355,6 @@ class Main extends Component {
   // ici je vais réceptionner tout ce qui est SDP/iceCandidates
   signalFromServer = (fromId, body) => {
     let signal = JSON.parse(body)
-    console.log('signal received: ' + JSON.stringify(signal))
 
     if (signal.speaking !== undefined) {
       this.updateSpeakingState(fromId, signal.speaking);
@@ -745,38 +744,47 @@ class Main extends Component {
         })
 
 
+
+
+
+       // Ici, je vais gérer le scénario au cas où un user se co à une salle avec des utilisateurs déjà présents.
+       //Cet utilisateur va envoyer son offre à tous les utilisateurs déjà présents dans la salle.        
+
+        if (id === socketId) { // dans cette condition je veux être sûr que celui qui va envoyer son offer à tout lmonde est l'user qui vient de se connecter (genre moi localement quoi)
+          
+          for (let otherUserId in connections) {  // je loop à travers les autres utilisateurs dans la room
+            if (otherUserId === socketId) continue 
         
-   // à tester si nécessaire une fois le projet en prod
-        if (id === socketId) { // si c'est moi
-          for (let id2 in connections) {  
-            console.log(connections)// id2 = les autres users déjà présents dans la room
-   // si les autres utilisateurs déjà present dans la room ont la meme id que moi bah je fais sauter l'itération(juste pour etre sur)
-            if (id2 === socketId) continue 
-
-            const connection = connections[id2]
-
+            let connection = connections[otherUserId];
+            console.log('ajout du stream à la connection pour user : ' + otherUserId);
+        
             try {
-              connection.addStream(window.localStream)
-            } catch (e) {}
-
+              connection.addStream(window.localStream);
+            } catch (e) {
+              console.error('Erreur ajout stream à la co :', e);
+              continue; // Skip l'itérration pour passer à la suivante si erreur
+            }
+        
+            console.log('Stream bien ajouté. Creation de l offre pour user : ' + otherUserId);
+        
             connection
               .createOffer()
-              .then((description) =>
-                connection.setLocalDescription(description)
-              )
-              // localDescription va contnir des infos (sdp) sur les params de session (codec audio video etc..)
-              //obligé d'envoyer ces params pour la communication en webRTC
-              .then(() =>
+              .then((description) => {
+                console.log('Offre creee avec succes!. Je set la local description pour user : ' + otherUserId);
+                connection.setLocalDescription(description);
+              })
+              .then(() => {
+                console.log('Local description -> OK . envoi du signal pour user ' + otherUserId);
                 socket.emit(
                   "signal",
-                  id2,
+                  otherUserId,
                   JSON.stringify({ sdp: connections[id].localDescription })
-                )
-              )
-              .catch((e) => console.log(e))
+                );
+              })
+              .catch((e) => console.error('Erreur durant création offer ou localdescription ): ', e));
           }
         }
-  
+        
       })
     })
   }
