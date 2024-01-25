@@ -1,14 +1,13 @@
 // Import des dépendances
 import React, { Component } from "react"
 import { Button } from "@material-ui/core"
-import { Link } from "react-router-dom"
+import { useHistory } from "react-router-dom"
 import { message } from "antd"
 import logo from "../../assets/hdmlogo.png"
 import Rodal from "rodal"
 import "rodal/lib/rodal.css"
 import axios from "axios"
 import "../../style/Admin.css"
-import { jwtDecode } from "jwt-decode"
 
 class AdminPanel extends Component {
   constructor(props) {
@@ -34,21 +33,6 @@ class AdminPanel extends Component {
     const adminEmail = localStorage.getItem("adminEmail")
     this.setState({ userEmail: adminEmail })
     message.info("Bienvenue dans votre espace administrateur")
-    const authToken = localStorage.getItem("authToken")
-
-    if (authToken) {
-      try {
-        const decodedToken = jwtDecode(authToken)
-        const currentTime = Math.floor(Date.now() / 1000)
-        if (decodedToken.exp && decodedToken.exp < currentTime) {
-          localStorage.removeItem("authToken")
-          window.location.href = "/authAdmin?sessionExpired=true"
-          return
-        }
-      } catch (error) {
-        console.error("Error decoding JWT:", error)
-      }
-    }
   }
 
   handleLogout = () => {
@@ -164,20 +148,20 @@ class AdminPanel extends Component {
   }
 
   handleDeleteUser = (email) => {
-
-    const confirmDelete = window.confirm(`Voulez-vous vraiment supprimer l'utilisateur ${email} ?`);
+    const confirmDelete = window.confirm(
+      `Voulez-vous vraiment supprimer l'utilisateur ${email} ?`
+    )
 
     if (confirmDelete) {
-
-    axios
-      .delete(`http://localhost:4001/deleteUser/${email}`)
-      .then(() => {
-        message.success("Utilisateur supprimé avec succès")
-        this.fetchUsers()
-      })
-      .catch((error) => {
-        message.error("Erreur lors de la suppression de l'utilisateur")
-      })
+      axios
+        .delete(`http://localhost:4001/deleteUser/${email}`)
+        .then(() => {
+          message.success("Utilisateur supprimé avec succès")
+          this.fetchUsers()
+        })
+        .catch((error) => {
+          message.error("Erreur lors de la suppression de l'utilisateur")
+        })
     }
   }
 
@@ -190,6 +174,9 @@ class AdminPanel extends Component {
       minute: "2-digit",
     }
     return new Date(dateStr).toLocaleDateString("fr-FR", options)
+  }
+  handleHome = () => {
+    window.location.href = "/"
   }
 
   render() {
@@ -207,7 +194,14 @@ class AdminPanel extends Component {
 
     return (
       <div>
-        <Link to="/">
+        <Button
+          style={{
+            position: "absolute",
+            top: "0",
+            left: "0",
+          }}
+          onClick={this.handleHome}
+        >
           <img
             className="logo"
             src={logo}
@@ -219,7 +213,7 @@ class AdminPanel extends Component {
               left: "0",
             }}
           />
-        </Link>
+        </Button>
         <div className="content">
           <p
             style={{
