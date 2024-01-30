@@ -21,6 +21,7 @@ class ControlBar extends Component {
     this.setState({ showInfo: !this.state.showInfo })
   }
 
+
   render() {
     const {
       // mes states

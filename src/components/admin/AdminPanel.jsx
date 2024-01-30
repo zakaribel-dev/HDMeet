@@ -42,7 +42,7 @@ class AdminPanel extends Component {
 
   fetchUsers = () => {
     axios
-      .get(`http://localhost:4001/users`)
+      .get(`https://zakaribel.com:4001/users`)
       .then((response) => {
         this.setState({ users: response.data })
       })
@@ -112,7 +112,7 @@ class AdminPanel extends Component {
     const { newUserEmail, newUserRole, password } = this.state
 
     axios
-      .post(`http://localhost:4001/insertUser`, {
+      .post(`https://zakaribel.com:4001/insertUser`, {
         email: newUserEmail,
         role: newUserRole,
         password: newUserRole === "ADMIN" ? password : "",
@@ -133,7 +133,7 @@ class AdminPanel extends Component {
     const userEmail = this.state.selectedUserForRoleUpdate.email
 
     axios
-      .put(`http://localhost:4001/updateRoles`, {
+      .put(`https://zakaribel.com:4001/updateRoles`, {
         email: userEmail,
         newRole: role,
         newPassword: role === "ADMIN" ? newPassword : "",
@@ -154,7 +154,7 @@ class AdminPanel extends Component {
 
     if (confirmDelete) {
       axios
-        .delete(`http://localhost:4001/deleteUser/${email}`)
+        .delete(`https://zakaribel.com:4001/deleteUser/${email}`)
         .then(() => {
           message.success("Utilisateur supprimé avec succès")
           this.fetchUsers()

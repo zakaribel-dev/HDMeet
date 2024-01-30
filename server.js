@@ -15,14 +15,16 @@ const { authenticateToken } = require('./middleware/Auth');
 let server = http.createServer(app)
 let io = require('socket.io')(server, {
 	cors: {
-		origin: "http://localhost:8000",
-		methods: ["GET", "POST"]
+		origin: ["http://localhost:4001", "http://localhost:8000"],
+		methods: ["GET", "POST"],
+		credentials: true,
 	}
 });
 
 app.use(cors({
-	origin: "http://localhost:8000",
-	methods: ["GET", "POST", "PUT", "DELETE"]
+	origin: ["http://localhost:4001", "http://localhost:8000"],
+	methods: ["GET", "POST", "PUT", "DELETE"],
+	credentials: true,
 }));
 
 app.use(bodyParser.json())
@@ -34,6 +36,8 @@ if (process.env.NODE_ENV === 'production') { // mode prod
 	app.get("*", (req, res) => {
 		res.sendFile(path.join(__dirname + "/build/index.html"))
 	})
+
+
 }
 app.set('port', 4001)
 
@@ -51,15 +55,15 @@ io.on('connection', (socket) => {
 		io.to(userId).emit('user-kicked');
 
 	});
-	
+
 	socket.on('joinCall', (path, username, email) => {
 
 		socket.on("refreshingPage", () => {
-            // déco de la room si l'user refresh la page
-            socket.leave(path);
-            socket.emit("redirectToMainPage");
-		  });
-	
+			// déco de la room si l'user refresh la page
+			socket.leave(path);
+			socket.emit("redirectToMainPage");
+		});
+
 		socket.username = username;
 		console.log(` "${username}" a rejoin avec l'ID: ${socket.id} dans la room : ${path}`);
 
@@ -67,12 +71,12 @@ io.on('connection', (socket) => {
 			connections[path] = [];
 		}
 
-			connections[path].push(socket.id); // je stock des sockets id dans la room . connections va contenir la room et la liste des socket id qui sont dans la room
+		connections[path].push(socket.id); // je stock des sockets id dans la room . connections va contenir la room et la liste des socket id qui sont dans la room
 
 		if (!roomUsers[path]) { // si pas d'users  dans la room -> tableau des users dans la room vide
 			roomUsers[path] = [];
 		}
-		
+
 		roomUsers[path].push({ id: socket.id, username, email });// roomUsers va contenir socket id et usernames (en gros les username présents dans la room)
 
 		socket.emit('update-user-list', roomUsers[path]);
@@ -172,6 +176,8 @@ connection.connect((err) => {
 
 
 app.get('/users', (req, res) => {
+	console.log('Requête vers /users reçue.');
+
 	connection.query('SELECT * FROM users ORDER BY created_At DESC', (err, results) => {
 		if (err) {
 			console.error('Erreur lors de la récupération des utilisateurs depuis la base de données :', err);

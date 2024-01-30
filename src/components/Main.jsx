@@ -5,9 +5,7 @@ import io from "socket.io-client"
 import { Input, Button } from "@material-ui/core"
 import logo from "../assets/hdmlogo.png"
 import backgroundBlck from "../assets/blckdef.png"
-import userConnectedSound from "../assets/user_connected.mp3"
 import userDisconnectedSound from "../assets/disconnected.mp3"
-import messageSound from "../assets/message_sound.mp3"
 import Rodal from "rodal"
 import "rodal/lib/rodal.css"
 import { message, Flex, Spin } from "antd" // superbe bibliotheque
@@ -22,11 +20,11 @@ import { Link } from "react-router-dom"
 // attention à faire en sorte qu'il y ait pas de souci avec protocol SSL (ça m'a bien fait chier)
 const server_url =
   process.env.NODE_ENV === "production" 
-    ? "http://195.35.25.238:4001"
+    ? "https://zakaribel.com:4001"
     : "http://localhost:4001"
 
 // Pourquoi je déclare ces sortes de states global ?
-//Parce qu'à chaque fois qu'un utilisateur join une room, IL VA CREER UNE INSTANCE VIDEO
+//Parce qu'à chaque fois qu'un utilisateur join une room, IL VA CREER UNE INSTANCE DE MAIN (ce composant)
 // du coup, on veut qu'à chaque instances video
 // l'utilisateur recoive le nouveau "VideoElements", "connections" etc etc qui eux sont mis à jour globalement!
 let connections = {}
@@ -71,7 +69,6 @@ class Main extends Component {
       username: "",
       usernames: {},
       isSidebarOpen: false,
-      playUserConnectedSound: false,
       requestingSpeech: false,
       speechRequestMessage: "",
       password: "",
@@ -79,13 +76,11 @@ class Main extends Component {
       connectedEmails: [],
       currentUserEmail: "",
       isAdmin: false,
-      loadingCamera: true,
-      isSpeakingStates: {},
-      
+      loadingCamera: true,      
     }
     
     axios
-      .get("http://localhost:4001/users")
+    .get(`${server_url}/users`, { withCredentials: true } )
       .then((response) => {
         this.setState({ authorizedUsers: response.data })
       })
@@ -96,7 +91,7 @@ class Main extends Component {
         )
       })
 
-    this.getPermissions()
+    this.sourcesPermissions()
   }
 
   componentDidMount() {
@@ -116,7 +111,7 @@ class Main extends Component {
     }))
   }
 
-  getPermissions = async () => {
+  sourcesPermissions = async () => {
     try {
       const videoStream = await navigator.mediaDevices.getUserMedia({
         video: true,
@@ -148,49 +143,47 @@ class Main extends Component {
     }
   }
 
-  getMedia = () => {
+  getMediasAndInitConnection = () => {
     this.setState(
       {
         video: this.videoAvailable, // videoAvailable = acces video autorisé par user donc this.state.video sera true
         audio: this.audioAvailable, // ...
       },
       () => {
-        this.getUserMedia()  // llorsque l'utilisateur arrivera dans la room sa camera/son audio sera activée ou désactivée en fonction des permissions 
-        this.connectToSocketServer() // ensuite jenclenche la logique de connexion server notamment en recuperant l'username, l'email, signal pour SDP/iceCandidates etc....
+        this.getSources()  // llorsque l'utilisateur arrivera dans la room sa camera/son audio sera activée ou désactivée en fonction des permissions 
+        this.serverConnection() // ensuite jenclenche la logique de connexion server notamment en recuperant l'username, l'email, signal pour SDP/iceCandidates etc....
       }
     )
   }
   
-
-  getUserMedia = () => {
-    if (
-      (this.state.video && this.videoAvailable) ||
-      (this.state.audio && this.audioAvailable)
-    ) {
+  getSources = () => {
+    if ((this.state.video && this.videoAvailable) || (this.state.audio && this.audioAvailable)) {
       navigator.mediaDevices.getUserMedia({ video: this.state.video, audio: this.state.audio })
-        // ce machin va mretourner un obj "MediaStream" qui est simplement le flux que j'ai récupéré (audio + video ou audio/video)
-        .then(this.getUserMediaSuccess) //si c'est good j'apelle getUserMediaSuccess qui recuperera le MediaStream en param
-        .then((stream) => {})
-        .catch((e) => console.log(e))
-    } else { // sinon si ni l'audio ni la video sont activés  je stop tout en meme temps : 
+        .then((stream) => {
+          // Call getSources_Success directly or perform any other logic with the stream
+          this.getSources_Success(stream);
+        })
+        .catch((e) => console.log(e));
+    } else {
+      // If neither audio nor video are enabled, stop the current media stream
       try {
-        let tracks = this.myVideo.current.srcObject.getTracks()
-        tracks.forEach((track) => track.stop())
+        if (this.myVideo.current && this.myVideo.current.srcObject) {
+          let tracks = this.myVideo.current.srcObject.getTracks();
+          tracks.forEach((track) => track.stop());
+        }
       } catch (e) {
-        console.log(e)
+        console.log(e);
       }
     }
-    // à savoir que getUserMedia est appelé à chaque fois qu'un utilisateur desactive et ou réactive son audio ou sa camera afin de stopper ou reactiver le media correspondant
-    // en rappelant getuserMedia cette fois si avec les states mises à jour (voir handleAudio et handleVideo)
-  }
+  };
+  
 
-  getUserMediaSuccess = (stream) => {
+  getSources_Success = (stream) => {
     // "stream" contient mon objet MediaStream qui m'est retourné quand l'user a accepté qu'on ait acces à sa cam + micro..
-    //(voir plus haut dans getUserMedia)
+    //(voir plus haut dans getSources)
     // Met à jour le flux local avec le nouveau flux de la caméra/microphone.
     window.localStream = stream
     this.myVideo.current.srcObject = stream
-    this.setupAudioAnalyser(stream, socketId); // appel à cette fonction pour la gestion de l'affichage de la frame verte autour de la video lorsqu'un utilisateur parle
     
     // ici je boucle dans toute les connexions actuelles..
     for (let id in connections) {
@@ -220,68 +213,7 @@ class Main extends Component {
     }
   }
 
-  updateSpeakingState = (userId, speaking) => {
-    const isSpeakingStates = { ...this.state.isSpeakingStates };
-    isSpeakingStates[userId] = speaking;
-    this.setState({ isSpeakingStates });
   
-    // Mettre à jour l'affichage visuel
-    this.updateSpeakingVisual(userId, speaking);
-  };
-
-
-  updateSpeakingVisual = (userId, speaking) => {
-    const videoElement = document.querySelector(`[data-socket="${userId}"]`);
-    if (videoElement) {
-      videoElement.classList.toggle("speaking", speaking);
-    }
-  };
-
-  
-  setupAudioAnalyser(stream, socketId) {
-    // Vérifier si le flux contient des pistes audio
-    const audioTracks = stream.getAudioTracks();
-    if (audioTracks.length === 0) {
-      console.error("Le flux de médias ne contient pas de piste audio.");
-      return; // Sortir de la fonction si mic muted
-    }
-  
-    try {
-      // Création de l'AudioContext et de la source du flux
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const mediaStreamSource = audioContext.createMediaStreamSource(stream);
-  
-      // Configuration de l'analyseur
-      const analyser = audioContext.createAnalyser();
-      mediaStreamSource.connect(analyser);
-  
-      analyser.fftSize = 512;
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-  
-      const speakingThreshold = 0.5;  // Seuil de détection de la parole
-  
-      const analyze = () => {
-        analyser.getByteFrequencyData(dataArray);
-        let sum = dataArray.reduce((a, b) => a + b, 0);
-        let average = sum / bufferLength;
-  
-        let isSpeaking = average > speakingThreshold;
-        if (this.state.isSpeakingStates[socketId] !== isSpeaking) { 
-          this.updateSpeakingState(socketId, isSpeaking);
-          socket.emit("user-speaking", { speaking: isSpeaking, userId: socketId });
-        }
-  
-        requestAnimationFrame(analyze);
-      };
-  
-      analyze();
-    } catch (error) {
-      console.error("Erreur lors de la configuration de l'analyseur audio:", error);
-    }
-  }
-  
-
   // partage d'ecran
   screenSharePermission = () => {
     if (this.state.screen) {
@@ -296,69 +228,67 @@ class Main extends Component {
     }
   }
 
-  screenShareGranted = (stream) => {
-    try {
-      //j'arrete de diffuser le stream video de l'user qui souhaite partager son écran à la place
-      window.localStream.getTracks().forEach((track) => track.stop())
-    } catch (e) {
-      console.log(e)
-    }
-
-    // jattribue le stream de mon partage à une variable globale "window.localStream = stream "
-    //Ca me fait uen reference locale qui fait que je peux la modifier si je veux gerer la transition
-    //entre webcam et partage par exemple ou genre désactiver la cam dans d'autres circonstances
-    window.localStream = stream
-    this.myVideo.current.srcObject = stream // je veux diffuser mon stream dans mon element html "video"
-
-    for (let id in connections) {
-      if (id === socketId) continue
-
-      connections[id].addStream(window.localStream)
-
-      connections[id].createOffer().then((description) => {
-        // évidamment je partage un flux (partage d'écran cette fois ci) aux autres utilisateurs
-        //je dois creer une "offer" qui contiendra mon SDP
-
-        connections[id]
-          .setLocalDescription(description)
-          .then(() => {
-            socket.emit(
-              "signal",
-              id,
-              JSON.stringify({ sdp: connections[id].localDescription })
-            )
-          })
-          .catch((e) => console.log(e))
+  screenShareGranted = (screenStream) => {
+  
+    // Jvais chercher la permission audio du micro (car je veux garder la source  du micro pendant le partage d'écran pas seulement la source audio du système)
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then((audioStream) => {
+        // J'ajoute l audio track du micro au track du partage d ecran
+        const combinedStream = new MediaStream([...screenStream.getTracks(), ...audioStream.getTracks()]);
+  
+  
+        // j'attribue le stream combiné à la variable globale 
+        window.localStream = combinedStream;
+        this.myVideo.current.srcObject = combinedStream;
+  
+        for (let id in connections) {
+          if (id === socketId) continue;
+  
+          connections[id].addStream(combinedStream);
+  
+          connections[id].createOffer().then((description) => {
+    
+            connections[id]
+              .setLocalDescription(description)
+              .then(() => {
+                socket.emit(
+                  "signal",
+                  id,
+                  JSON.stringify({ sdp: connections[id].localDescription })
+                );
+              })
+              .catch((e) => console.log(e));
+          });
+        }
+  
+        let videoElement = document.querySelector(`[data-socket="${socketId}"]`);
+  
+        if (videoElement) {
+          this.requestFullScreen(videoElement);
+        }
+  
+        combinedStream.getTracks().forEach((track) => {
+          track.onended = () => {
+            this.setState(
+              {
+                screen: false,
+              },
+              () => {
+                this.getSources();
+              }
+            );
+          };
+        });
       })
-    }
-
-    let videoElement = document.querySelector(`[data-socket="${socketId}"]`)
-
-    if (videoElement) {
-      this.requestFullScreen(videoElement)
-    }
-
-    stream.getTracks().forEach((track) => {
-      track.onended = () => {
-        this.setState(
-          {
-            screen: false,
-          },
-          () => {
-            this.getUserMedia()
-          }
-        )
-      }
-    })
+      .catch((error) => {
+        console.error("Error accessing microphone:", error);
+      });
   }
-
+  
   // ici je vais réceptionner tout ce qui est SDP/iceCandidates
   signalFromServer = (fromId, body) => {
     let signal = JSON.parse(body)
 
-    if (signal.speaking !== undefined) {
-      this.updateSpeakingState(fromId, signal.speaking);
-    }
 
     if (fromId !== socketId) {
       //jmassure que l'id du client (fromId) est différent du mien (socketId)
@@ -507,20 +437,11 @@ class Main extends Component {
 }
 
 
-  playUserConnectedSound = () => {
-    const audio = new Audio(userConnectedSound)
-    audio.play()
-  }
-
   playUserDisconnectedSound = () => {
     const audio = new Audio(userDisconnectedSound)
     audio.play()
   }
 
-  playMessageSound = () => {
-    const audio = new Audio(messageSound)
-    audio.play()
-  }
 
   handleRequestSpeech = () => {
     const { username } = this.state
@@ -532,7 +453,7 @@ class Main extends Component {
     })
   }
 
-  connectToSocketServer = () => {
+  serverConnection = () => {
     socket = io.connect(server_url, { secure: true })
 
     // demande de parole
@@ -549,12 +470,7 @@ class Main extends Component {
     socket.on("connect", () => {
 
       socket.on("redirectToMainPage", () => {
-        if(socket){ // si je fais pas cette condition j'ai une petite erreur qui s'affiche pendant 1 seconde et fais chauffer mon cpu(??)
-          socket.disconnect()
-          let tracks = this.myVideo.current.srcObject.getTracks()  // ke libere mes tracks pour les autres apps
-          tracks.forEach((track) => track.stop())
-        }
-        window.location.href = "/"; 
+       this.stopTracks()
       });
 
     socket.emit(
@@ -584,8 +500,11 @@ class Main extends Component {
       socket.on("chat-message", this.addMessage) // je recupere les messages emit coté serveur pour les display 
 
       socket.on("userLeft", (id) => {
+
+
+      
         let video = document.querySelector(`[data-socket="${id}"]`)
-        let username = this.state.usernames[id] || "Un utilisateur"
+        let username = this.state.usernames[id] 
 
          // J'update l'array usernames quand un user quitte la room "...this.state.usernames" 
          //car je creer une sorte de copie pour effectuer mon delete ensuite jenvoie cette copie à ma vraie state
@@ -593,9 +512,9 @@ class Main extends Component {
     delete updatedUsernames[id]; // du coup je supprime l'utilisateur en supprimant son index id
 
     this.setState({ usernames: updatedUsernames });
-
-
-        if (id !== socketId) {
+      
+      
+        if (id !== socketId )  {
           this.playUserDisconnectedSound()
           message.info({
             content: `${username} a quitté la conférence.`,
@@ -613,16 +532,10 @@ class Main extends Component {
         }
       })
 
-    socket.on("user-speaking", (data) => {
-  const { speaking, userId } = data;
-  this.updateSpeakingState(userId, speaking);
-});
-
 
       socket.on("user-joined", (id, clients, username, email) => {
         console.log(`Utilisateur rejoint: ${username}, ID: ${id}`);
-
-     
+    
 
   // seul l'user qui s'est fait kick va listen " user-kicked" car c'est emit depuis server spécifiquement à la personne kicked et le reste jte fais pas un dessin       
         socket.on("user-kicked", () => {
@@ -631,7 +544,7 @@ class Main extends Component {
         });
 
         if (id !== socketId) {
-          this.playUserConnectedSound()
+          this.getSources(); // ce salaud j'ai dû le metre ici aussi car en mode prod il faut le relancer quand un autre peer se connecte
           message.success({
             content: `${username} a rejoint la conférence.`,
             className: "custom-message",
@@ -640,14 +553,6 @@ class Main extends Component {
           // si l'id qui vient d'arriver ne correspond pas à mon socketId (moi) alors je play le sound de cette maniere,
           //seul les utilisateurs déjà présents dans la room entendront le son si un new user arrive dans la room
         }
-
-        
-        const isSpeakingStates = { ...this.state.isSpeakingStates }; // clone de isSpeakingStates
-
-        if (id !== socketId) { // si user (pas moi)
-          isSpeakingStates[id] = false; // Initialise l'état de parole à false pour le nouvel user
-        }
-        this.setState({ isSpeakingStates }); // le isSpeakingStates d'origine prendra la valeur de la copie traitée dans ma condition plus haut 
 
         
         this.setState((prevState) => ({
@@ -686,7 +591,10 @@ class Main extends Component {
               `[data-socket="${socketListId}"]`
             )
 
-            if (searchVideo === null) {              
+
+            if (!searchVideo) {              
+              console.log(`Creating new video element for socketListId: ${socketListId}`);
+
               videoElements = clients.length // videoElements = nbr de client connectés à la  room..
               console.log("videoElements: ", videoElements) // test adaptCSS
               let main = document.getElementById("main")
@@ -729,6 +637,8 @@ class Main extends Component {
               this.adaptCSS(main);
 
             }else{
+              console.log(`Updating existing video element for socketListId: ${socketListId}`);
+
               searchVideo.srcObject = event.stream;
 
             }
@@ -742,9 +652,6 @@ class Main extends Component {
             message.error('Votre caméra n\'est pas disponible !!');
           }        
         })
-
-
-
 
 
        // Ici, je vais gérer le scénario au cas où un user se co à une salle avec des utilisateurs déjà présents.
@@ -789,11 +696,18 @@ class Main extends Component {
     })
   }
 
-
   kickUser = (userId) => {
     socket.emit("kick-user", userId); // j'envoie au serveur l'id du mal aimé à jarter
   };
 
+  stopTracks = () =>{
+    if(socket){ // si je fais pas cette condition j'ai une petite erreur qui s'affiche pendant 1 seconde et fais chauffer mon cpu(??)
+      socket.disconnect()
+      let tracks = this.myVideo.current.srcObject.getTracks()  // kje libere mes tracks pour les autres apps
+      tracks.forEach((track) => track.stop())
+    }
+    window.location.href = "/"; 
+  }
 
   handleVideoClick = (event) => {
     const videoElement = event.target
@@ -815,13 +729,13 @@ class Main extends Component {
 
   // pourquoi !this.state ??? bah parce que ça permute de false à true (clique et reclique) tu comprends mon garçon?
   handleVideo = () => {
-    this.setState({ video: !this.state.video }, () => this.getUserMedia());
+    this.setState({ video: !this.state.video }, () => this.getSources());
   }
   
   handleAudio = () => {
-    this.setState({ audio: !this.state.audio }, () => this.getUserMedia());
+    this.setState({ audio: !this.state.audio }, () => this.getSources());
   }
-    
+
   handleScreen = () =>
     this.setState({ screen: !this.state.screen }, () =>
       this.screenSharePermission()
@@ -852,7 +766,6 @@ class Main extends Component {
     if (socketIdSender !== socketId) {
       // si c'est pas moi qui envoie le msg, j'incremente le chiffre de la notif d'un new msg
       this.setState({ newmessages: this.state.newmessages + 1 })
-      this.playMessageSound()
     }
   }
 
@@ -863,6 +776,8 @@ class Main extends Component {
   handleEmail = (e) => {
     this.setState({ currentUserEmail: e.target.value })
   }
+
+  // handleSubmit jfais pas un dessin..
   handleSubmit = (event) => {
     event.preventDefault();
   
@@ -882,7 +797,6 @@ class Main extends Component {
     }
   
     if (isAuthorized) {
-      // Enregistrer les informations de l'utilisateur dans le stockage local
       localStorage.setItem("currentUser", JSON.stringify({ email: currentUserEmail, isAdmin }));
   
       this.setState({ isAdmin }, () => {
@@ -893,7 +807,6 @@ class Main extends Component {
     }
   };
   
-
   sendMessage = () => {
     if (this.state.message.trim() !== "") {
       
@@ -902,7 +815,6 @@ class Main extends Component {
       this.setState({ message: "", sender: this.state.username }) 
     }
   }
-
 
   copyConfLink = () => {
     let text = window.location.href
@@ -916,7 +828,7 @@ class Main extends Component {
   }
 
   connect = () =>
-    this.setState({ askForUsername: false }, () => this.getMedia())
+    this.setState({ askForUsername: false }, () => this.getMediasAndInitConnection())
 
   render() {
     return (
@@ -932,19 +844,20 @@ class Main extends Component {
                 </Flex>
               </div>
             )}
-            <Link to="/">
-              <img
-                className="logo"
-                src={logo}
-                alt=""
-                style={{
-                  width: "150px",
-                  position: "absolute",
-                  top: "0",
-                  left: "0",
-                }}
-              />
-            </Link>
+      <Link onClick={this.stopTracks}>
+        <img
+          className="logo"
+          src={logo}
+          alt=""
+          style={{
+            width: "150px",
+            position: "absolute",
+            top: "0",
+            left: "0",
+          }}
+        />
+      </Link>
+
             <br />
             <br />
             <div className="askUsername">

@@ -36,7 +36,7 @@ const AuthAdmin = () => {
     }
 
     axios
-      .post("http://localhost:4001/login", {
+      .post("https://zakaribel.com:4001/login", {
         email: adminEmail,
         password: adminPassword,
       })
