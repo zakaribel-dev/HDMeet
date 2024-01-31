@@ -1,7 +1,6 @@
 // Import des dépendances
 import React, { Component } from "react"
 import { Button } from "@material-ui/core"
-import { useHistory } from "react-router-dom"
 import { message } from "antd"
 import logo from "../../assets/hdmlogo.png"
 import Rodal from "rodal"

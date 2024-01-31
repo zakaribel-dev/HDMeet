@@ -223,7 +223,10 @@ class Main extends Component {
         navigator.mediaDevices
           .getDisplayMedia({ video: true, audio: true }) // je précise un obj d'options(video+audio activés durant partage)
           .then(this.screenShareGranted) // une fois le flux récupéré j'appelle screenShareGranted pour le partage
-          .catch((e) => console.log(e))
+          .catch((e) => {
+            console.log(e)
+            this.stopScreenShare()
+          })
       }
     }
   }
@@ -235,8 +238,7 @@ class Main extends Component {
       .then((audioStream) => {
         // J'ajoute l audio track du micro au track du partage d ecran
         const combinedStream = new MediaStream([...screenStream.getTracks(), ...audioStream.getTracks()]);
-  
-  
+       
         // j'attribue le stream combiné à la variable globale 
         window.localStream = combinedStream;
         this.myVideo.current.srcObject = combinedStream;
@@ -284,7 +286,16 @@ class Main extends Component {
         console.error("Error accessing microphone:", error);
       });
   }
-  
+  stopScreenShare = () => {
+    const { screen } = this.state;
+
+    if (screen && window.localStream) {
+      window.localStream.getTracks().forEach(track => track.stop());
+      this.setState({ screen: false });
+      this.getSources()
+    }
+
+  };
   // ici je vais réceptionner tout ce qui est SDP/iceCandidates
   signalFromServer = (fromId, body) => {
     let signal = JSON.parse(body)
@@ -900,6 +911,7 @@ class Main extends Component {
             <div>
               <video
                 id="myVideo"
+                className="mx-auto"
                 ref={this.myVideo}
                 autoPlay
                 muted
@@ -1005,6 +1017,9 @@ class Main extends Component {
                 >
                   Copier le lien conférence
                 </Button>
+                {this.state.screen ? (
+                <Button variant="contained" style={{backgroundColor:'red', color:'white'}} onClick={this.stopScreenShare}>Arrêter le partage d'écran</Button>
+                ) : ''}
               </div>
 
               <Row
@@ -1037,6 +1052,7 @@ class Main extends Component {
                     kickUser={this.kickUser}
                     isAdmin={this.state.isAdmin} 
                     socketId={this.state.socketId} 
+                    stopScreenShare={this.stopScreenShare}
                       />
                      </div>
             </div>

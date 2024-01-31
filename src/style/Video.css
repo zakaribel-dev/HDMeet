@@ -6,7 +6,9 @@
   align-items: center;
   justify-content: center;
 }
-
+body{
+  background-color:#8EC8F2 !important;
+}
 
 .custom-message { 
   position: absolute;

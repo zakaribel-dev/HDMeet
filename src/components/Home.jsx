@@ -1,4 +1,4 @@
-import { React, useEffect, useState } from 'react';
+import { React } from 'react';
 import { Button } from '@material-ui/core';
 import logo from '../assets/hdmlogo.png';
 import '../style/Home.css';
