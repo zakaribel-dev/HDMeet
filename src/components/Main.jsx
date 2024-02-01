@@ -214,255 +214,70 @@ class Main extends Component {
   }
 
   
-  // partage d'ecran
-  screenSharePermission = () => {
-    if (this.state.screen) {
-      //displayMedia c'est le partage donc à ne pas confondre avec usermedia qui est la webcam!
-      if (navigator.mediaDevices.getDisplayMedia) {
-        //verifie si le partage est dispo (si je partage déjà sur gather ou zoom par exemple, ça marchera pas)
-        navigator.mediaDevices
-          .getDisplayMedia({ video: true, audio: true }) // je précise un obj d'options(video+audio activés durant partage)
-          .then(this.screenShareGranted) // une fois le flux récupéré j'appelle screenShareGranted pour le partage
-          .catch((e) => {
-            console.log(e)
-            this.stopScreenShare()
-          })
-      }
-    }
-  }
 
-  screenShareGranted = (screenStream) => {
-  
-    // Jvais chercher la permission audio du micro (car je veux garder la source  du micro pendant le partage d'écran pas seulement la source audio du système)
-    navigator.mediaDevices.getUserMedia({ audio: true })
-      .then((audioStream) => {
-        // J'ajoute l audio track du micro au track du partage d ecran
-        const combinedStream = new MediaStream([...screenStream.getTracks(), ...audioStream.getTracks()]);
-       
-        // j'attribue le stream combiné à la variable globale 
-        window.localStream = combinedStream;
-        this.myVideo.current.srcObject = combinedStream;
-  
-        for (let id in connections) {
-          if (id === socketId) continue;
-  
-          connections[id].addStream(combinedStream);
-  
-          connections[id].createOffer().then((description) => {
-    
-            connections[id]
-              .setLocalDescription(description)
-              .then(() => {
-                socket.emit(
-                  "signal",
-                  id,
-                  JSON.stringify({ sdp: connections[id].localDescription })
-                );
-              })
-              .catch((e) => console.log(e));
-          });
-        }
-  
-        let videoElement = document.querySelector(`[data-socket="${socketId}"]`);
-  
-        if (videoElement) {
-          this.requestFullScreen(videoElement);
-        }
-  
-        combinedStream.getTracks().forEach((track) => {
-          track.onended = () => {
-            this.setState(
-              {
-                screen: false,
-              },
-              () => {
-                this.getSources();
-              }
-            );
-          };
-        });
-      })
-      .catch((error) => {
-        console.error("Error accessing microphone:", error);
-      });
-  }
-  stopScreenShare = () => {
-    const { screen } = this.state;
-
-    if (screen && window.localStream) {
-      window.localStream.getTracks().forEach(track => track.stop());
-      this.setState({ screen: false });
-      this.getSources()
-    }
-
-  };
   // ici je vais réceptionner tout ce qui est SDP/iceCandidates
   signalFromServer = (fromId, body) => {
-    let signal = JSON.parse(body)
-
-
+    let signal = JSON.parse(body);
+  
     if (fromId !== socketId) {
-      //jmassure que l'id du client (fromId) est différent du mien (socketId)
       if (signal.sdp) {
-        // si ya une prop "sdp" dans signal  (prop generé lors du createOffer)
         connections[fromId]
-          .setRemoteDescription(new RTCSessionDescription(signal.sdp)) // alors je controle le sdp de l'autre peer
+          .setRemoteDescription(new RTCSessionDescription(signal.sdp))
           .then(() => {
-            // si le type du sdp est "offer" ça veut dire que c'est une offre qui vient d'un autre client btw
+            console.log(`Remote description set successfully for ${fromId}`);
+            
             if (signal.sdp.type === "offer") {
               connections[fromId]
-                .createAnswer() // du coup je creer une réponse (answer) à l'offer que j'ai reçu,
-                //c'est obligatoire
+                .createAnswer()
                 .then((description) => {
+                  console.log(`Answer created successfully for ${fromId}`);
+                  
                   connections[fromId]
-                    // une fois arrivé à l'appel de setLocalDescription(),
-                    // webRTC va commencer le processus de collecte des IceCandidates (fourni par navigateurs)
                     .setLocalDescription(description)
                     .then(() => {
-                      // déjà vu ..
+                      console.log(`Local description set successfully for ${fromId}`);
+                      
                       socket.emit(
-                        // déjà vu ..
-                        "signal", // déjà vu ..
-                        fromId, // déjà vu ..
+                        "signal",
+                        fromId,
                         JSON.stringify({
-                          sdp: connections[fromId].localDescription, // déjà vu ..
+                          sdp: connections[fromId].localDescription,
                         })
-                      )
+                      );
                     })
-                    .catch((e) => console.log(e))
+                    .catch((e) => console.error(`Error setting local description for ${fromId}:`, e));
                 })
-                .catch((e) => console.log(e))
+                .catch((e) => console.error(`Error creating answer for ${fromId}:`, e));
             }
-
-            // pour comprendre un peu ICE(Interactive Connectivity Establishment),
-            //jte conseille : https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate ou alors chatGPT of course
-            // Si tu veux d'un côté t'as les SDP (contiennent des infos type codec video/audio ou tout autre parametres.
-            // Ca décrit COMMENT les médias doivent être échangés entres les peers)
-            //d'un autre côté tu as les iceCandidates qui est un peu dans le même principe mais
-            //fournit plutôt des infos sur la connectivité réseau (ip, routing, ports, protocols..)
-            //afin de pouvoir choisir le meilleur chemin réseau pour communiquer entres les peers
-            // ICE et l'offre SDP doivent toujours être utilisés ensemble pour pouvoir établir une co webrtc
+  
             if (this.iceCandidatesQueue[fromId]) {
               this.iceCandidatesQueue[fromId].forEach((candidate) => {
-                // un client envoi son message (fromId)
-                connections[fromId].addIceCandidate(
-                  // j'ajoute mes iceCandidates à ma connection p2p
-                  new RTCIceCandidate(candidate)
-                )
-              })
-              // quand tous les candidats ont été ajoutés à la classe RTCIceCandidate, ils sont delete car y en a plus bseoin
-              delete this.iceCandidatesQueue[fromId]
+                connections[fromId]
+                  .addIceCandidate(new RTCIceCandidate(candidate))
+                  .catch((e) => console.error(`Error adding ice candidate for ${fromId}:`, e));
+              });
+              delete this.iceCandidatesQueue[fromId];
             }
           })
-          .catch((e) => console.log(e))
+          .catch((e) => console.error(`Error setting remote description for ${fromId}:`, e));
       }
-
-      // du coup logiquement après un createOffer ou createAnswer tu as des iceCandidates
-      // ça veut dire qu'un peer a trouvé un bon chemin de connexion réseau et il l'envoie pour qu'un autre peer puisse l'essayer
+  
       if (signal.ice) {
-        let iceCandidate = new RTCIceCandidate(signal.ice) // du coup je creer mon obj RTCIceCandidate à partir du ice reçu
+        let iceCandidate = new RTCIceCandidate(signal.ice);
         if (connections[fromId].remoteDescription) {
-          // si setRemoteDescription s'est déroule comme i faut
           connections[fromId]
-            .addIceCandidate(iceCandidate) // j'ajoute ENFIN l'icecandidate
-            .catch((e) => console.log(e))
+            .addIceCandidate(iceCandidate)
+            .catch((e) => console.error(`Error adding ice candidate for ${fromId}:`, e));
         } else {
           if (!this.iceCandidatesQueue[fromId]) {
-            // Si pas de remoteDescription,
-            //alors je stock les iceCandidates en attendant la remoteDescription
-            this.iceCandidatesQueue[fromId] = []
+            this.iceCandidatesQueue[fromId] = [];
           }
-          // du coup en attendant je met les iceCandidate dans une file d'attente
-          this.iceCandidatesQueue[fromId].push(iceCandidate)
+          this.iceCandidatesQueue[fromId].push(iceCandidate);
         }
       }
     }
-  }
-
-  enterFullScreenMode = (userId) => {
-    let videoElement = document.querySelector(`[data-socket="${userId}"]`)
-    if (videoElement) {
-      this.requestFullScreen(videoElement)
-    }
-  }
-
-  requestFullScreen = (videoElement) => {
-    if (videoElement.requestFullscreen) {
-      videoElement.requestFullscreen()
-    } else if (videoElement.mozRequestFullScreen) {
-      videoElement.mozRequestFullScreen()
-    } else if (videoElement.webkitRequestFullscreen) {
-      videoElement.webkitRequestFullscreen()
-    } else if (videoElement.msRequestFullscreen) {
-      videoElement.msRequestFullscreen()
-    }
-  }
-
-  handleScreenShareStop = () => {
-    // en fait tous les navigateurs ont un fullscreen mode de manière native
-    if (document.exitFullscreen) {
-      document.exitFullscreen()
-    } else if (document.mozCancelFullScreen) {
-      // pour mozilla
-      document.mozCancelFullScreen()
-    } else if (document.webkitExitFullscreen) {
-      // chrome
-      document.webkitExitFullscreen()
-    } else if (document.msExitFullscreen) {
-      // edge (il me semble lol)
-      document.msExitFullscreen()
-    }
-  }
-
-  adaptCSS(main) {
-    let widthMain = main.offsetWidth;
-    let minWidth = "30%";
-    if ((widthMain * 30) / 100 < 300) {
-        minWidth = "300px";
-    }
-    let minHeight = "40%";
-    let height = String(100 / videoElements) + "%";  // videoElements est le nombre total de vidéos
-    let width = "";
-
-    if (videoElements === 0 || videoElements === 1) {
-        width = "450px";
-        height = "500px";
-    } else if (videoElements === 2) {
-        width = "35%";
-    } else if (videoElements === 3 || videoElements === 4) {
-        width = "30%";
-        height = "50%";
-    } else {
-        width = String(100 / videoElements) + "%";
-    }
-
-    let videos = main.querySelectorAll("video");
-    for (let i = 0; i < videos.length; i++) {
-        videos[i].style.minWidth = minWidth;
-        videos[i].style.minHeight = minHeight;
-        videos[i].style.setProperty("width", width);
-        videos[i].style.setProperty("height", height);
-    }
-
-    return { minWidth, minHeight, width, height };
-}
-
-
-  playUserDisconnectedSound = () => {
-    const audio = new Audio(userDisconnectedSound)
-    audio.play()
-  }
-
-
-  handleRequestSpeech = () => {
-    const { username } = this.state
-    socket.emit("speechEvent", { username })
-    message.warning({
-      content: `Demande de prise de parole en cours..`,
-      className: "custom-message",
-      duration: 3,
-    })
-  }
+  };
+  
 
   serverConnection = () => {
     socket = io.connect(server_url, { secure: true })
@@ -576,12 +391,13 @@ class Main extends Component {
         this.setState((prevState) => ({
           connectedEmails: [...prevState.connectedEmails, email],
         }))
+        console.log("Current state of connections:", connections);
 
         clients.forEach((socketListId) => {
-          connections[socketListId] = new RTCPeerConnection(
-            peerConnectionConfig
-          ) //stockage des sockets id dans ma globale "connections",
+          console.log(`Creating connection for user ${socketListId}`);
+          connections[socketListId] = new RTCPeerConnection(peerConnectionConfig);//stockage des sockets id dans ma globale "connections",
           // c'est ici que j'initialise la connection P2P avec webRTC
+          console.log("Current state of connections:", connections);
 
           // je collecte mes iceCandidates
           connections[socketListId].onicecandidate = function (event) {
@@ -658,13 +474,18 @@ class Main extends Component {
             
           if (window.localStream instanceof MediaStream) {
             // Ajout du stream à RTCPeerConnection..
+            console.log(`Adding stream to connection for user ${socketListId}`);
+            console.log("Current state of connections:", connections);
+
             connections[socketListId].addStream(window.localStream);
           } else {
             message.error('Votre caméra n\'est pas disponible !!');
           }        
         })
 
-
+        if (id === socketId) {
+          console.log("Local user has joined. Initiating offer creation logic.");
+      }
        // Ici, je vais gérer le scénario au cas où un user se co à une salle avec des utilisateurs déjà présents.
        //Cet utilisateur va envoyer son offre à tous les utilisateurs déjà présents dans la salle.        
 
@@ -707,17 +528,187 @@ class Main extends Component {
     })
   }
 
-  kickUser = (userId) => {
-    socket.emit("kick-user", userId); // j'envoie au serveur l'id du mal aimé à jarter
+
+  // partage d'ecran
+  screenSharePermission = () => {
+    if (this.state.screen) {
+      //displayMedia c'est le partage donc à ne pas confondre avec usermedia qui est la webcam!
+      if (navigator.mediaDevices.getDisplayMedia) {
+        //verifie si le partage est dispo (si je partage déjà sur gather ou zoom par exemple, ça marchera pas)
+        navigator.mediaDevices
+          .getDisplayMedia({ video: true, audio: true }) // je précise un obj d'options(video+audio activés durant partage)
+          .then(this.screenShareGranted) // une fois le flux récupéré j'appelle screenShareGranted pour le partage
+          .catch((e) => {
+            console.log(e)
+            this.stopScreenShare()
+          })
+      }
+    }
+  }
+
+  screenShareGranted = (screenStream) => {
+  
+    // Jvais chercher la permission audio du micro (car je veux garder la source  du micro pendant le partage d'écran pas seulement la source audio du système)
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then((audioStream) => {
+        // J'ajoute l audio track du micro au track du partage d ecran
+        const combinedStream = new MediaStream([...screenStream.getTracks(), ...audioStream.getTracks()]);
+       
+        // j'attribue le stream combiné à la variable globale 
+        window.localStream = combinedStream;
+        this.myVideo.current.srcObject = combinedStream;
+  
+        for (let id in connections) {
+          if (id === socketId) continue;
+  
+          connections[id].addStream(combinedStream);
+  
+          connections[id].createOffer().then((description) => {
+    
+            connections[id]
+              .setLocalDescription(description)
+              .then(() => {
+                socket.emit(
+                  "signal",
+                  id,
+                  JSON.stringify({ sdp: connections[id].localDescription })
+                );
+              })
+              .catch((e) => console.log(e));
+          });
+        }
+  
+        let videoElement = document.querySelector(`[data-socket="${socketId}"]`);
+  
+        if (videoElement) {
+          this.requestFullScreen(videoElement);
+        }
+  
+        combinedStream.getTracks().forEach((track) => {
+          track.onended = () => {
+            this.setState(
+              {
+                screen: false,
+              },
+              () => {
+                this.getSources();
+              }
+            );
+          };
+        });
+      })
+      .catch((error) => {
+        console.error("Error accessing microphone:", error);
+      });
+  }
+  stopScreenShare = () => {
+    const { screen } = this.state;
+
+    if (screen && window.localStream) {
+      window.localStream.getTracks().forEach(track => track.stop());
+      this.setState({ screen: false });
+      this.getSources()
+    }
+
   };
 
-  stopTracks = () =>{
-    if(socket){ // si je fais pas cette condition j'ai une petite erreur qui s'affiche pendant 1 seconde et fais chauffer mon cpu(??)
+  enterFullScreenMode = (userId) => {
+    let videoElement = document.querySelector(`[data-socket="${userId}"]`)
+    if (videoElement) {
+      this.requestFullScreen(videoElement)
+    }
+  }
+
+  requestFullScreen = (videoElement) => {
+    if (videoElement.requestFullscreen) {
+      videoElement.requestFullscreen()
+    } else if (videoElement.mozRequestFullScreen) {
+      videoElement.mozRequestFullScreen()
+    } else if (videoElement.webkitRequestFullscreen) {
+      videoElement.webkitRequestFullscreen()
+    } else if (videoElement.msRequestFullscreen) {
+      videoElement.msRequestFullscreen()
+    }
+  }
+
+  handleScreenShareStop = () => {
+    // en fait tous les navigateurs ont un fullscreen mode de manière native
+    if (document.exitFullscreen) {
+      document.exitFullscreen()
+    } else if (document.mozCancelFullScreen) {
+      // pour mozilla
+      document.mozCancelFullScreen()
+    } else if (document.webkitExitFullscreen) {
+      // chrome
+      document.webkitExitFullscreen()
+    } else if (document.msExitFullscreen) {
+      // edge (il me semble lol)
+      document.msExitFullscreen()
+    }
+  }
+
+  adaptCSS(main) {
+    let widthMain = main.offsetWidth;
+    let minWidth = "30%";
+    if ((widthMain * 30) / 100 < 300) {
+        minWidth = "300px";
+    }
+    let minHeight = "40%";
+    let height = String(100 / videoElements) + "%";  // videoElements est le nombre total de vidéos
+    let width = "";
+
+    if (videoElements === 0 || videoElements === 1) {
+        width = "450px";
+        height = "500px";
+    } else if (videoElements === 2) {
+        width = "35%";
+    } else if (videoElements === 3 || videoElements === 4) {
+        width = "30%";
+        height = "50%";
+    } else {
+        width = String(100 / videoElements) + "%";
+    }
+
+    let videos = main.querySelectorAll("video");
+    for (let i = 0; i < videos.length; i++) {
+        videos[i].style.minWidth = minWidth;
+        videos[i].style.minHeight = minHeight;
+        videos[i].style.setProperty("width", width);
+        videos[i].style.setProperty("height", height);
+    }
+
+    return { minWidth, minHeight, width, height };
+}
+
+
+  playUserDisconnectedSound = () => {
+    const audio = new Audio(userDisconnectedSound)
+    audio.play()
+  }
+
+
+  handleRequestSpeech = () => {
+    const { username } = this.state
+    socket.emit("speechEvent", { username })
+    message.warning({
+      content: `Demande de prise de parole en cours..`,
+      className: "custom-message",
+      duration: 3,
+    })
+  }
+
+  kickUser = (userId) => {
+    socket.emit("kick-user", userId) // j'envoie au serveur l'id du mal aimé à jarter
+  }
+
+  stopTracks = () => {
+    if (socket) {
+      // si je fais pas cette condition j'ai une petite erreur qui s'affiche pendant 1 seconde et fais chauffer mon cpu(??)
       socket.disconnect()
-      let tracks = this.myVideo.current.srcObject.getTracks()  // kje libere mes tracks pour les autres apps
+      let tracks = this.myVideo.current.srcObject.getTracks() // kje libere mes tracks pour les autres apps
       tracks.forEach((track) => track.stop())
     }
-    window.location.href = "/"; 
+    window.location.href = "/"
   }
 
   handleVideoClick = (event) => {
@@ -740,11 +731,11 @@ class Main extends Component {
 
   // pourquoi !this.state ??? bah parce que ça permute de false à true (clique et reclique) tu comprends mon garçon?
   handleVideo = () => {
-    this.setState({ video: !this.state.video }, () => this.getSources());
+    this.setState({ video: !this.state.video }, () => this.getSources())
   }
-  
+
   handleAudio = () => {
-    this.setState({ audio: !this.state.audio }, () => this.getSources());
+    this.setState({ audio: !this.state.audio }, () => this.getSources())
   }
 
   handleScreen = () =>
@@ -761,7 +752,6 @@ class Main extends Component {
     } catch (e) {
       console.log(e)
     }
-  
   }
 
   openChat = () => this.setState({ showModal: true, newmessages: 0 })
@@ -770,7 +760,7 @@ class Main extends Component {
 
   addMessage = (data, sender, socketIdSender) => {
     this.setState((prevState) => ({
-      messages: [...prevState.messages, { sender: sender, data: data }], // je prend le tableau messages 
+      messages: [...prevState.messages, { sender: sender, data: data }], // je prend le tableau messages
       //et y ajoute sender et data sans y ecraser les autres msgs dans le tableau messages, tu comprends mon lait ?
     }))
 
@@ -790,40 +780,44 @@ class Main extends Component {
 
   // handleSubmit jfais pas un dessin..
   handleSubmit = (event) => {
-    event.preventDefault();
-  
-    const { currentUserEmail, authorizedUsers } = this.state;
-  
-    let isAuthorized = false;
-    let isAdmin = false;
-  
+    event.preventDefault()
+
+    const { currentUserEmail, authorizedUsers } = this.state
+
+    let isAuthorized = false
+    let isAdmin = false
+
     for (let i = 0; i < authorizedUsers.length; i++) {
       if (authorizedUsers[i].email === currentUserEmail) {
-        isAuthorized = true;
-        if (authorizedUsers[i].role.includes('ADMIN')) {
-          isAdmin = true;
+        isAuthorized = true
+        if (authorizedUsers[i].role.includes("ADMIN")) {
+          isAdmin = true
         }
-        break;
+        break
       }
     }
-  
+
     if (isAuthorized) {
-      localStorage.setItem("currentUser", JSON.stringify({ email: currentUserEmail, isAdmin }));
-  
+      localStorage.setItem(
+        "currentUser",
+        JSON.stringify({ email: currentUserEmail, isAdmin })
+      )
+
       this.setState({ isAdmin }, () => {
-        this.connect();
-      });
+        this.connect()
+      })
     } else {
-      message.error("Hop hop hop, vous n'êtes pas autorisé à entrer ici, allez zou!");
+      message.error(
+        "Hop hop hop, vous n'êtes pas autorisé à entrer ici, allez zou!"
+      )
     }
-  };
-  
+  }
+
   sendMessage = () => {
     if (this.state.message.trim() !== "") {
-      
-      socket.emit("chat-message", this.state.message, this.state.username);// j'emit les states username et message 
-      // une fois le message envoyé, jremet l'input à vide et je laisse this.username as sender of course 
-      this.setState({ message: "", sender: this.state.username }) 
+      socket.emit("chat-message", this.state.message, this.state.username) // j'emit les states username et message
+      // une fois le message envoyé, jremet l'input à vide et je laisse this.username as sender of course
+      this.setState({ message: "", sender: this.state.username })
     }
   }
 
@@ -839,7 +833,9 @@ class Main extends Component {
   }
 
   connect = () =>
-    this.setState({ askForUsername: false }, () => this.getMediasAndInitConnection())
+    this.setState({ askForUsername: false }, () =>
+      this.getMediasAndInitConnection()
+    )
 
   render() {
     return (
@@ -855,19 +851,19 @@ class Main extends Component {
                 </Flex>
               </div>
             )}
-      <Link onClick={this.stopTracks}>
-        <img
-          className="logo"
-          src={logo}
-          alt=""
-          style={{
-            width: "150px",
-            position: "absolute",
-            top: "0",
-            left: "0",
-          }}
-        />
-      </Link>
+            <Link onClick={this.stopTracks}>
+              <img
+                className="logo"
+                src={logo}
+                alt=""
+                style={{
+                  width: "150px",
+                  position: "absolute",
+                  top: "0",
+                  left: "0",
+                }}
+              />
+            </Link>
 
             <br />
             <br />
@@ -945,10 +941,14 @@ class Main extends Component {
               onRequestSpeech={this.handleRequestSpeech}
               usernames={this.state.usernames}
               currentUserEmail={this.state.currentUserEmail}
-              isAdmin={this.state.isAdmin} 
+              isAdmin={this.state.isAdmin}
             />
             {/* je "hide" la modal si showModal est faux( c le cas par défaut of course*/}
-            <Rodal visible={this.state.showModal} onClose={this.closeChat} customStyles={{borderRadius:'25px'}}>
+            <Rodal
+              visible={this.state.showModal}
+              onClose={this.closeChat}
+              customStyles={{ borderRadius: "25px" }}
+            >
               <header>
                 <img
                   style={{ width: "80px", borderRadius: "10px" }}
@@ -1018,8 +1018,16 @@ class Main extends Component {
                   Copier le lien conférence
                 </Button>
                 {this.state.screen ? (
-                <Button variant="contained" style={{backgroundColor:'red', color:'white'}} onClick={this.stopScreenShare}>Arrêter le partage d'écran</Button>
-                ) : ''}
+                  <Button
+                    variant="contained"
+                    style={{ backgroundColor: "red", color: "white" }}
+                    onClick={this.stopScreenShare}
+                  >
+                    Arrêter le partage d'écran
+                  </Button>
+                ) : (
+                  ""
+                )}
               </div>
 
               <Row
@@ -1044,17 +1052,17 @@ class Main extends Component {
                 ></video>
               </Row>
 
-                   <div className="video-chat-container">
-                      <Sidebar
-                    usernames={this.state.usernames}
-                    isSidebarOpen={this.state.isSidebarOpen}
-                    toggleSidebar={this.toggleSidebar}
-                    kickUser={this.kickUser}
-                    isAdmin={this.state.isAdmin} 
-                    socketId={this.state.socketId} 
-                    stopScreenShare={this.stopScreenShare}
-                      />
-                     </div>
+              <div className="video-chat-container">
+                <Sidebar
+                  usernames={this.state.usernames}
+                  isSidebarOpen={this.state.isSidebarOpen}
+                  toggleSidebar={this.toggleSidebar}
+                  kickUser={this.kickUser}
+                  isAdmin={this.state.isAdmin}
+                  socketId={this.state.socketId}
+                  stopScreenShare={this.stopScreenShare}
+                />
+              </div>
             </div>
           </div>
         )}
