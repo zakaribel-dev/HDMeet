@@ -279,255 +279,261 @@ class Main extends Component {
   };
   
 
-  serverConnection = () => {
-    socket = io.connect(server_url, { secure: true })
+serverConnection = () => {
+  socket = io.connect(server_url, { secure: true })
 
-    // demande de parole
-    socket.on("speech-requested", ({ username }) => {
-      message.warning({
-        content: `${username} souhaite prendre la parole.`,
-        className: "custom-message",
-        duration: 3,
+  // demande de parole
+  socket.on("speech-requested", ({ username }) => {
+    message.warning({
+      content: `${username} souhaite prendre la parole.`,
+      className: "custom-message",
+      duration: 3,
+    })
+  })
+
+  socket.on("signal", this.signalFromServer)
+
+  socket.on("connect", () => {
+
+    socket.on("redirectToMainPage", () => {
+     this.stopTracks()
+    });
+
+  socket.emit(
+    "joinCall",
+    window.location.href,
+    this.state.username,
+    this.state.currentUserEmail
+  )
+  socketId = socket.id
+  this.setState({ socketId });
+
+  socket.on("update-user-list", (users) => {
+    if (users) {
+      // si j'fais pas ça il va mdire undefined blablabla
+      let updatedUsernames = {}
+      users.forEach((user) => {    
+        updatedUsernames[user.id] = user.username
       })
+      this.setState({ usernames: updatedUsernames })
+    } else {
+      console.log(
+        "Pas encore de user ici.."
+      )
+    }
+  })
+
+    socket.on("chat-message", this.addMessage) // je recupere les messages emit coté serveur pour les display 
+
+    socket.on("userLeft", (id) => {
+
+
+    
+      let video = document.querySelector(`[data-socket="${id}"]`)
+      let username = this.state.usernames[id] 
+
+       // J'update l'array usernames quand un user quitte la room "...this.state.usernames" 
+       //car je creer une sorte de copie pour effectuer mon delete ensuite jenvoie cette copie à ma vraie state
+  const updatedUsernames = { ...this.state.usernames };
+  delete updatedUsernames[id]; // du coup je supprime l'utilisateur en supprimant son index id
+
+  this.setState({ usernames: updatedUsernames });
+    
+    
+      if (id !== socketId )  {
+        this.playUserDisconnectedSound()
+        message.info({
+          content: `${username} a quitté la conférence.`,
+          className: "custom-message",
+          duration: 3,
+        })
+      }
+
+      if (video !== null) {
+        videoElements--
+        video.parentNode.removeChild(video)
+
+        let main = document.getElementById("main")
+        this.adaptCSS(main)
+      }
     })
 
-    socket.on("signal", this.signalFromServer)
 
-    socket.on("connect", () => {
+    socket.on("user-joined", (id, clients, username, email) => {
+      console.log(`Utilisateur rejoint: ${username}, ID: ${id}`);
+  
 
-      socket.on("redirectToMainPage", () => {
-       this.stopTracks()
+// seul l'user qui s'est fait kick va listen " user-kicked" car c'est emit depuis server spécifiquement à la personne kicked et le reste jte fais pas un dessin       
+      socket.on("user-kicked", () => {
+        window.location.href = "/";  
+        socket.disconnect();
       });
 
-    socket.emit(
-      "joinCall",
-      window.location.href,
-      this.state.username,
-      this.state.currentUserEmail
-    )
-    socketId = socket.id
-    this.setState({ socketId });
-
-    socket.on("update-user-list", (users) => {
-      if (users) {
-        // si j'fais pas ça il va mdire undefined blablabla
-        let updatedUsernames = {}
-        users.forEach((user) => {    
-          updatedUsernames[user.id] = user.username
+      if (id !== socketId) {
+        this.getSources(); // ce salaud j'ai dû le metre ici aussi car en mode prod il faut le relancer quand un autre peer se connecte
+        message.success({
+          content: `${username} a rejoint la conférence.`,
+          className: "custom-message",
+          duration: 3,
         })
-        this.setState({ usernames: updatedUsernames })
-      } else {
-        console.log(
-          "Pas encore de user ici.."
-        )
+        // si l'id qui vient d'arriver ne correspond pas à mon socketId (moi) alors je play le sound de cette maniere,
+        //seul les utilisateurs déjà présents dans la room entendront le son si un new user arrive dans la room
       }
-    })
-
-      socket.on("chat-message", this.addMessage) // je recupere les messages emit coté serveur pour les display 
-
-      socket.on("userLeft", (id) => {
-
 
       
-        let video = document.querySelector(`[data-socket="${id}"]`)
-        let username = this.state.usernames[id] 
+      this.setState((prevState) => ({
+        usernames: {
+          ...prevState.usernames,
+          [id]: username,
+        },
+      }))
 
-         // J'update l'array usernames quand un user quitte la room "...this.state.usernames" 
-         //car je creer une sorte de copie pour effectuer mon delete ensuite jenvoie cette copie à ma vraie state
-    const updatedUsernames = { ...this.state.usernames };
-    delete updatedUsernames[id]; // du coup je supprime l'utilisateur en supprimant son index id
+      this.setState((prevState) => ({
+        connectedEmails: [...prevState.connectedEmails, email],
+      }))
+      console.log("Current state of connections:", connections);
 
-    this.setState({ usernames: updatedUsernames });
-      
-      
-        if (id !== socketId )  {
-          this.playUserDisconnectedSound()
-          message.info({
-            content: `${username} a quitté la conférence.`,
-            className: "custom-message",
-            duration: 3,
-          })
-        }
+      clients.forEach((socketListId) => {
+        connections[socketListId] = this.createPeerConnection(socketListId);
 
-        if (video !== null) {
-          videoElements--
-          video.parentNode.removeChild(video)
-
-          let main = document.getElementById("main")
-          this.adaptCSS(main)
-        }
-      })
-
-
-      socket.on("user-joined", (id, clients, username, email) => {
-        console.log(`Utilisateur rejoint: ${username}, ID: ${id}`);
-    
-
-  // seul l'user qui s'est fait kick va listen " user-kicked" car c'est emit depuis server spécifiquement à la personne kicked et le reste jte fais pas un dessin       
-        socket.on("user-kicked", () => {
-          window.location.href = "/";  
-          socket.disconnect();
-        });
-
-        if (id !== socketId) {
-          this.getSources(); // ce salaud j'ai dû le metre ici aussi car en mode prod il faut le relancer quand un autre peer se connecte
-          message.success({
-            content: `${username} a rejoint la conférence.`,
-            className: "custom-message",
-            duration: 3,
-          })
-          // si l'id qui vient d'arriver ne correspond pas à mon socketId (moi) alors je play le sound de cette maniere,
-          //seul les utilisateurs déjà présents dans la room entendront le son si un new user arrive dans la room
-        }
-
-        
-        this.setState((prevState) => ({
-          usernames: {
-            ...prevState.usernames,
-            [id]: username,
-          },
-        }))
-
-        this.setState((prevState) => ({
-          connectedEmails: [...prevState.connectedEmails, email],
-        }))
+        // c'est ici que j'initialise la connection P2P avec webRTC
         console.log("Current state of connections:", connections);
 
-        clients.forEach((socketListId) => {
-          console.log(`Creating connection for user ${socketListId}`);
-          connections[socketListId] = new RTCPeerConnection(peerConnectionConfig);//stockage des sockets id dans ma globale "connections",
-          // c'est ici que j'initialise la connection P2P avec webRTC
-          console.log("Current state of connections:", connections);
-
-          // je collecte mes iceCandidates
-          connections[socketListId].onicecandidate = function (event) {
-            if (event.candidate != null) {
-              socket.emit(
-                "signal", // je spread mes icecandidate via "signal"
-                socketListId,
-                JSON.stringify({ ice: event.candidate })
-              )
-            }
-          }
-   
-          // je check si un nouveau user (nouveau videoElement du coup) arrive dans la room
-          connections[socketListId].onaddstream = (event) => {
-            // c un event de webRTC go voir : https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addstream_event
-
-            let searchVideo = document.querySelector(
-              `[data-socket="${socketListId}"]`
+        // je collecte mes iceCandidates
+        connections[socketListId].onicecandidate = function (event) {
+          if (event.candidate != null) {
+            socket.emit(
+              "signal", // je spread mes icecandidate via "signal"
+              socketListId,
+              JSON.stringify({ ice: event.candidate })
             )
-
-
-            if (!searchVideo) {              
-              console.log(`Creating new video element for socketListId: ${socketListId}`);
-
-              videoElements = clients.length // videoElements = nbr de client connectés à la  room..
-              console.log("videoElements: ", videoElements) // test adaptCSS
-              let main = document.getElementById("main")
-              let cssMesure = this.adaptCSS(main)
-
-
-              let video = document.createElement("video")
-
-              let css = {
-                minWidth: cssMesure.minWidth,
-                minHeight: cssMesure.minHeight,
-                maxHeight: "100%",
-                margin: "10px",
-                borderStyle: "solid",
-                borderColor: "#bdbdbd",
-                objectFit: "fill",
-                backgroundImage: `url(${backgroundBlck})`,
-                backgroundSize: 'cover', 
-                backgroundPosition: 'center', 
-                backgroundRepeat: 'no-repeat' 
-              };
-            
-              for (let i in css) video.style[i] = css[i]
-            
-              video.style.setProperty("width", cssMesure.width)
-              video.style.setProperty("height", cssMesure.height)
-              video.setAttribute("data-socket", socketListId)
-              video.style.borderRadius = "25px"
-              video.srcObject = event.stream
-              video.autoplay = true
-              video.playsinline = true
-              video.onclick = this.handleVideoClick
-              const videoId = "video_" + socketListId;
-              video.setAttribute("id", videoId);
-              // video.classList.add("video-with-username");
-              // video.setAttribute("data-username", username);
-              video.srcObject = event.stream;
-              main.appendChild(video)
-        
-              this.adaptCSS(main);
-
-            }else{
-              console.log(`Updating existing video element for socketListId: ${socketListId}`);
-
-              searchVideo.srcObject = event.stream;
-
-            }
-
-          }
-            
-          if (window.localStream instanceof MediaStream) {
-            // Ajout du stream à RTCPeerConnection..
-            console.log(`Adding stream to connection for user ${socketListId}`);
-            console.log("Current state of connections:", connections);
-
-            connections[socketListId].addStream(window.localStream);
-          } else {
-            message.error('Votre caméra n\'est pas disponible !!');
-          }        
-        })
-
-        if (id === socketId) {
-          console.log("Local user has joined. Initiating offer creation logic.");
-      }
-       // Ici, je vais gérer le scénario au cas où un user se co à une salle avec des utilisateurs déjà présents.
-       //Cet utilisateur va envoyer son offre à tous les utilisateurs déjà présents dans la salle.        
-
-        if (id === socketId) { // dans cette condition je veux être sûr que celui qui va envoyer son offer à tout lmonde est l'user qui vient de se connecter (genre moi localement quoi)
-          
-          for (let otherUserId in connections) {  // je loop à travers les autres utilisateurs dans la room
-            if (otherUserId === socketId) continue 
-        
-            let connection = connections[otherUserId];
-            console.log('ajout du stream à la connection pour user : ' + otherUserId);
-        
-            try {
-              connection.addStream(window.localStream);
-            } catch (e) {
-              console.error('Erreur ajout stream à la co :', e);
-              continue; // Skip l'itérration pour passer à la suivante si erreur
-            }
-        
-            console.log('Stream bien ajouté. Creation de l offre pour user : ' + otherUserId);
-        
-            connection
-              .createOffer()
-              .then((description) => {
-                console.log('Offre creee avec succes!. Je set la local description pour user : ' + otherUserId);
-                connection.setLocalDescription(description);
-              })
-              .then(() => {
-                console.log('Local description -> OK . envoi du signal pour user ' + otherUserId);
-                socket.emit(
-                  "signal",
-                  otherUserId,
-                  JSON.stringify({ sdp: connections[id].localDescription })
-                );
-              })
-              .catch((e) => console.error('Erreur durant création offer ou localdescription ): ', e));
           }
         }
-        
-      })
-    })
-  }
+ 
+        // je check si un nouveau user (nouveau videoElement du coup) arrive dans la room
+        connections[socketListId].onaddstream = (event) => {
+          // c un event de webRTC go voir : https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addstream_event
 
+          let searchVideo = document.querySelector(
+            `[data-socket="${socketListId}"]`
+          )
+
+
+          if (!searchVideo) {              
+            console.log(`Creating new video element for socketListId: ${socketListId}`);
+
+            videoElements = clients.length // videoElements = nbr de client connectés à la  room..
+            console.log("videoElements: ", videoElements) // test adaptCSS
+            let main = document.getElementById("main")
+            let cssMesure = this.adaptCSS(main)
+
+
+            let video = document.createElement("video")
+
+            let css = {
+              minWidth: cssMesure.minWidth,
+              minHeight: cssMesure.minHeight,
+              maxHeight: "100%",
+              margin: "10px",
+              borderStyle: "solid",
+              borderColor: "#bdbdbd",
+              objectFit: "fill",
+              backgroundImage: `url(${backgroundBlck})`,
+              backgroundSize: 'cover', 
+              backgroundPosition: 'center', 
+              backgroundRepeat: 'no-repeat' 
+            };
+          
+            for (let i in css) video.style[i] = css[i]
+          
+            video.style.setProperty("width", cssMesure.width)
+            video.style.setProperty("height", cssMesure.height)
+            video.setAttribute("data-socket", socketListId)
+            video.style.borderRadius = "25px"
+            video.srcObject = event.stream
+            video.autoplay = true
+            video.playsinline = true
+            video.onclick = this.handleVideoClick
+            const videoId = "video_" + socketListId;
+            video.setAttribute("id", videoId);
+            // video.classList.add("video-with-username");
+            // video.setAttribute("data-username", username);
+            video.srcObject = event.stream;
+            main.appendChild(video)
+      
+            this.adaptCSS(main);
+
+          }else{
+            console.log(`Updating existing video element for socketListId: ${socketListId}`);
+
+            searchVideo.srcObject = event.stream;
+
+          }
+
+        }
+          
+        if (window.localStream instanceof MediaStream) {
+          // Ajout du stream à RTCPeerConnection..
+          console.log(`Adding stream to connection for user ${socketListId}`);
+          console.log("Current state of connections:", connections);
+
+          connections[socketListId].addStream(window.localStream);
+        } else {
+          message.error('Votre caméra n\'est pas disponible !!');
+        }        
+      })
+
+      if (id === socketId) {
+        console.log("Local user has joined. Initiating offer creation logic.");
+    }
+     // Ici, je vais gérer le scénario au cas où un user se co à une salle avec des utilisateurs déjà présents.
+     //Cet utilisateur va envoyer son offre à tous les utilisateurs déjà présents dans la salle.        
+
+      if (id === socketId) { // dans cette condition je veux être sûr que celui qui va envoyer son offer à tout lmonde est l'user qui vient de se connecter (genre moi localement quoi)
+        
+        for (let otherUserId in connections) {  // je loop à travers les autres utilisateurs dans la room
+          if (otherUserId === socketId) continue 
+      
+          let connection = connections[otherUserId];
+          console.log('ajout du stream à la connection pour user : ' + otherUserId);
+      
+          try {
+            connection.addStream(window.localStream);
+          } catch (e) {
+            console.error('Erreur ajout stream à la co :', e);
+            continue; // Skip l'itérration pour passer à la suivante si erreur
+          }
+      
+          console.log('Stream bien ajouté. Creation de l offre pour user : ' + otherUserId);
+      
+          connection
+            .createOffer()
+            .then((description) => {
+              console.log('Offre creee avec succes!. Je set la local description pour user : ' + otherUserId);
+              connection.setLocalDescription(description);
+            })
+            .then(() => {
+              console.log('Local description -> OK . envoi du signal pour user ' + otherUserId);
+              socket.emit(
+                "signal",
+                otherUserId,
+                JSON.stringify({ sdp: connections[id].localDescription })
+              );
+            })
+            .catch((e) => console.error('Erreur durant création offer ou localdescription ): ', e));
+        }
+      }
+      
+    })
+  })
+}
+
+  
+createPeerConnection = () =>   {
+  let peerConnection = new RTCPeerConnection(peerConnectionConfig);
+
+  return peerConnection;
+}
 
   // partage d'ecran
   screenSharePermission = () => {
