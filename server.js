@@ -27,6 +27,15 @@ app.use(cors({
 	credentials: true,
 }));
 
+app.use((req, res, next) => {
+	res.setHeader('Access-Control-Allow-Origin', 'http://localhost:8000');
+	res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+	res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+	res.setHeader('Access-Control-Allow-Credentials', 'true');
+	next();
+  });
+  
+
 app.use(bodyParser.json())
 
 
@@ -99,10 +108,11 @@ io.on('connection', (socket) => {
 		socket.broadcast.emit('user-speaking', data);
 	});
 
-	socket.on('signal', (toId, message) => { // message contient le SDP généré avec createOffer coté front
-		io.to(toId).emit('signal', socket.id, message) // j'emit le signal du socket.id (moi)  vers les autres sockets
-	})
-
+	socket.on('signal', (toId, message) => {
+		console.log(`Received signal from ${socket.id} to ${toId}:`, message);
+		io.to(toId).emit('signal', socket.id, message);
+	  });
+	  
 	socket.on('chat-message', (data, sender) => {
 		data = sanitizeString(data);// on rend safe vs failles xss
 		sender = sanitizeString(sender); // idem
@@ -183,13 +193,8 @@ app.get('/users', (req, res) => {
 			console.error('Erreur lors de la récupération des utilisateurs depuis la base de données :', err);
 			res.status(500).json({ error: 'Erreur lors de la récupération des utilisateurs' });
 		} else {
-			const sanitizedResults = results.map(user => ({
-				...user,
-				//Si un pti malin (ou une ptite maline) a réussi je n'sais comment a injecter du code dans la bdd bah je nettoie ça avant d'envoyer au client
-				email: sanitizeString(user.email),
-				password: sanitizeString(user.password)
-			}));
-			res.json(sanitizedResults);
+			const sanitizedEmails = results.map(user => sanitizeString(user.email));
+            res.json(sanitizedEmails);
 		}
 	});
 });
@@ -319,8 +324,7 @@ app.post('/login', (req, res) => {
 
 	app.use(session({
 		secret: process.env.JWT_SECRET,
-		resave: true,
-		saveUninitialized: true,
+		resave: false, // je veux que la session soit completement détruite après déconnexion 
 	}));
 
 	if (!email || !password) {
@@ -329,11 +333,7 @@ app.post('/login', (req, res) => {
 
 	const query = 'SELECT * FROM users WHERE email = ?';
 	connection.query(query, [email], (err, results) => {
-		if (err) {
-			console.error('Erreur lors de la recherche de l\'utilisateur :', err);
-			return res.status(500).json({ error: 'Erreur lors de la recherche de l\'utilisateur.' });
-		}
-
+		
 		if (results.length === 0) {
 			return res.status(401).json({ error: 'Utilisateur non trouvé.' });
 		}
