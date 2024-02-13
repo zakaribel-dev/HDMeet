@@ -36,24 +36,32 @@ const AuthAdmin = () => {
     }
 
     axios
-      .post("https://zakaribel.com:4001/login", {
+      .post("http://localhost:4001/login", {
         email: adminEmail,
         password: adminPassword,
       })
       .then((response) => {
-        const { token } = response.data
+    
+          const { token } = response.data
 
-        login(token) // j'envoie le token en localstorage via la methode login de authContext !
-
-        localStorage.setItem("adminEmail", adminEmail)
-        navigate("/adminPanel")
+          login(token) // j'envoie le token en localstorage via la methode login de authContext !
+  
+          localStorage.setItem("adminEmail", adminEmail)
+          navigate("/adminPanel")
+  
       })
       .catch((error) => {
-        console.error("Erreur lors de l'authentification :", error)
-        message.error("Mot de passe ou utilisateur incorrect.")
+        if(error.response.status === 403){
+          message.error("Vous n'êtes pas admin, zou !")
+        }
+        if(error.response.status === 401){
+          message.error("Mot de passe incorrect !")
+        }
+        console.error("erreur! " + error)
       })
   }
 
+  
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
       loginAsAdmin()

@@ -17,11 +17,10 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         try {
           const decodedToken = jwtDecode(token);
-          const currentTime = Math.floor(Date.now() / 1000);
-          setIsTokenExpired(decodedToken.exp < currentTime);
+          const currentTime = Math.floor(Date.now() / 1000); // nombre de secondes écoulées depuis 1970 LOL
+          setIsTokenExpired(decodedToken.exp < currentTime); // decodedToken.exp == heure à laquelle je set sign le token côté endpoint /login (server) + 30 mn (expiration)
         } catch (error) {
-          console.error("Error decoding JWT:", error);
-          setIsTokenExpired(true); 
+          console.error("Erreur JWT :", error);
         }
       }
     };

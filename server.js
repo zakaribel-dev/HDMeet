@@ -27,13 +27,6 @@ app.use(cors({
 	credentials: true,
 }));
 
-app.use((req, res, next) => {
-	res.setHeader('Access-Control-Allow-Origin', 'http://localhost:8000');
-	res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-	res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-	res.setHeader('Access-Control-Allow-Credentials', 'true');
-	next();
-  });
   
 
 app.use(bodyParser.json())
@@ -190,11 +183,13 @@ app.get('/users', (req, res) => {
 
 	connection.query('SELECT * FROM users ORDER BY created_At DESC', (err, results) => {
 		if (err) {
-			console.error('Erreur lors de la récupération des utilisateurs depuis la base de données :', err);
 			res.status(500).json({ error: 'Erreur lors de la récupération des utilisateurs' });
 		} else {
-			const sanitizedEmails = results.map(user => sanitizeString(user.email));
-            res.json(sanitizedEmails);
+			const sanitizedResults = results.map(user => ({
+				...user,
+				email: sanitizeString(user.email),
+			}));
+            res.json(sanitizedResults);
 		}
 	});
 });
@@ -219,7 +214,6 @@ app.put('/updateRoles', (req, res) => {
 
 		bcrypt.hash(newPassword, 10, (err, hashedPassword) => {
 			if (err) {
-				console.error('Erreur lors du hachage du mot de passe :', err);
 				return res.status(500).json({ error: 'Erreur lors du hachage du mot de passe.' });
 			}
 
@@ -236,28 +230,18 @@ app.put('/updateRoles', (req, res) => {
 			// pareil pour email à la fin de la query. C'est pour ça que l'ordre est important dans queryParams
 			connection.query(query + ' WHERE email = ?', queryParams, (err, results) => {
 				if (err) {
-					console.error('Erreur lors de la mise à jour du rôle et du mot de passe de l\'utilisateur :', err);
 					return res.status(500).json({ error: 'Erreur lors de la mise à jour du rôle et du mot de passe de l\'utilisateur.' });
 				}
-
-				if (results.affectedRows === 0) {
-					return res.status(404).json({ error: 'Utilisateur non trouvé.' });
-				}
-
-				res.json({ message: 'Rôle et mot de passe de l\'utilisateur mis à jour avec succès.' });
+	
+	       	res.json({ message: 'Rôle et mot de passe de l\'utilisateur mis à jour avec succès.' });
 			});
 		});
 	} else {
 		// Sinon je met juste à jour son role (si j'ai pas select admin dans le form)
-		console.log("KOUERY : " + query, "queryPaRAMS : " + queryParams)
+		console.log("queryy : " + query, "queryPaRAMS : " + queryParams)
 		connection.query(query + ' WHERE email = ?', queryParams, (err, results) => {
 			if (err) {
-				console.error('Erreur lors de la mise à jour du rôle de l\'utilisateur :', err);
 				return res.status(500).json({ error: 'Erreur lors de la mise à jour du rôle de l\'utilisateur.' });
-			}
-
-			if (results.affectedRows === 0) {
-				return res.status(404).json({ error: 'Utilisateur non trouvé.' });
 			}
 
 			res.json({ message: 'Rôle de l\'utilisateur mis à jour avec succès.' });
@@ -317,22 +301,20 @@ app.delete('/deleteUser/:email', (req, res) => {
 	});
 });
 
-
-
 app.post('/login', (req, res) => {
 	const { email, password } = req.body;
+
+	const  cleanEmail = sanitizeString(email)
+	const cleanPassword = sanitizeString(password)
 
 	app.use(session({
 		secret: process.env.JWT_SECRET,
 		resave: false, // je veux que la session soit completement détruite après déconnexion 
+		saveUninitialized: false,
 	}));
 
-	if (!email || !password) {
-		return res.status(400).json({ error: 'Email et mot de passe sont requis.' });
-	}
-
 	const query = 'SELECT * FROM users WHERE email = ?';
-	connection.query(query, [email], (err, results) => {
+	connection.query(query, [cleanEmail], (err, results) => {
 		
 		if (results.length === 0) {
 			return res.status(401).json({ error: 'Utilisateur non trouvé.' });
@@ -340,15 +322,19 @@ app.post('/login', (req, res) => {
 
 		const user = results[0];
 
+		if(results[0].role !== "ADMIN"){
+			return res.status(403).json({error : "Vous n'êtes pas admin, zou !"})
+		}
+
 		// jcompare le mdp fourni avec celui qui est haché en bdd
-		bcrypt.compare(password, user.password, (bcryptErr, passwordMatch) => {
+		bcrypt.compare(cleanPassword, user.password, (bcryptErr, passwordMatch) => {
 			if (bcryptErr) {
 				return res.status(500).json({ error: 'Erreur lors de l\'authentification.' });
 			}
 
 			if (passwordMatch) {
 				// le password a match alors je genere un token
-				const token = jwt.sign({ email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '30m' });
+				const token = jwt.sign({ email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: "30m" }); 
 				console.log('Token généré :', token);
 				res.json({ token });
 			} else {

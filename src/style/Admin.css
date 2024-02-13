@@ -6,19 +6,20 @@
     border-radius: 5px;
     cursor: pointer;
     text-align: center;
+    margin: 1%;
 }
 
-.button.modify {
+.button-modify {
     background-color: #0000FF;
     color: #FFFFFF;
 }
 
-.button.create {
+.button-create {
     background-color: #109311;
     color: #FFFFFF;
 }
 
-.button.delete {
+.button-delete {
     background-color: #FF0000;
     color: #FFFFFF;
 }

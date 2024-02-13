@@ -28,6 +28,7 @@ class AdminPanel extends Component {
     }
   }
   componentDidMount() {
+    console.log(Math.floor(Date.now() / 1000))
     this.fetchUsers()
     const adminEmail = localStorage.getItem("adminEmail")
     this.setState({ userEmail: adminEmail })
@@ -41,7 +42,7 @@ class AdminPanel extends Component {
 
   fetchUsers = () => {
     axios
-      .get(`https://zakaribel.com:4001/users`)
+      .get(`http://localhost:4001/users`)
       .then((response) => {
         this.setState({ users: response.data })
       })
@@ -111,7 +112,7 @@ class AdminPanel extends Component {
     const { newUserEmail, newUserRole, password } = this.state
 
     axios
-      .post(`https://zakaribel.com:4001/insertUser`, {
+      .post(`http://localhost:4001/insertUser`, {
         email: newUserEmail,
         role: newUserRole,
         password: newUserRole === "ADMIN" ? password : "",
@@ -132,7 +133,7 @@ class AdminPanel extends Component {
     const userEmail = this.state.selectedUserForRoleUpdate.email
 
     axios
-      .put(`https://zakaribel.com:4001/updateRoles`, {
+      .put(`http://localhost:4001/updateRoles`, {
         email: userEmail,
         newRole: role,
         newPassword: role === "ADMIN" ? newPassword : "",
@@ -153,7 +154,7 @@ class AdminPanel extends Component {
 
     if (confirmDelete) {
       axios
-        .delete(`https://zakaribel.com:4001/deleteUser/${email}`)
+        .delete(`http://localhost:4001/deleteUser/${email}`)
         .then(() => {
           message.success("Utilisateur supprimé avec succès")
           this.fetchUsers()
@@ -300,7 +301,7 @@ class AdminPanel extends Component {
                 </div>
               )}
               <button
-                className="green-button"
+                className=" button button-create"
                 type="submit"
                 variant="contained"
                 color="primary"
@@ -342,13 +343,13 @@ class AdminPanel extends Component {
                   </td>
                   <td>
                     <button
-                      className="red-button"
+                      className="button button-delete"
                       onClick={() => this.handleDeleteUser(user.email)}
                     >
                       Supprimer
                     </button>
                     <button
-                      className="blue-button"
+                      className="button button-modify"
                       onClick={() => this.openRoleUpdateModal(user)}
                     >
                       Modifier le rôle
@@ -411,14 +412,14 @@ class AdminPanel extends Component {
               <button
                 onClick={this.handleUpdateRole}
                 variant="contained"
-                className="green-button"
+                className="button button-modify"
                 type="submit"
               >
                 Modifier le rôle
               </button>
               <br />
               <button
-                className="red-button"
+                className="button button-delete"
                 onClick={this.closeRoleUpdateModal}
               >
                 Fermer
