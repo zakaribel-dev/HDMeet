@@ -18,10 +18,7 @@ import ControlBar from "./partials/controlBar"
 import { Link } from "react-router-dom"
 
 // attention à faire en sorte qu'il y ait pas de souci avec protocol SSL (ça m'a bien fait chier)
-const server_url =
-  process.env.NODE_ENV === "production" 
-    ? "https://zakaribel.com:4001"
-    : "http://localhost:4001"
+const server_url = process.env.NODE_ENV === "production"  ? "https://zakaribel.com:4001": "http://localhost:4001"
 
 // Pourquoi je déclare ces sortes de states global ?
 //Parce qu'à chaque fois qu'un utilisateur join une room, IL VA CREER UNE INSTANCE DE MAIN (ce composant)
@@ -160,12 +157,10 @@ class Main extends Component {
     if ((this.state.video && this.videoAvailable) || (this.state.audio && this.audioAvailable)) {
       navigator.mediaDevices.getUserMedia({ video: this.state.video, audio: this.state.audio })
         .then((stream) => {
-          // Call getSources_Success directly or perform any other logic with the stream
           this.getSources_Success(stream);
         })
         .catch((e) => console.log(e));
     } else {
-      // If neither audio nor video are enabled, stop the current media stream
       try {
         if (this.myVideo.current && this.myVideo.current.srcObject) {
           let tracks = this.myVideo.current.srcObject.getTracks();
@@ -182,8 +177,8 @@ class Main extends Component {
     // "stream" contient mon objet MediaStream qui m'est retourné quand l'user a accepté qu'on ait acces à sa cam + micro..
     //(voir plus haut dans getSources)
     // Met à jour le flux local avec le nouveau flux de la caméra/microphone.
-    window.localStream = stream
-    this.myVideo.current.srcObject = stream
+    window.localStream = stream // global (en gros pas besoin de passer ça en param dans les autres méthodes comme serverConnection par exemple)
+    this.myVideo.current.srcObject = stream // ma vidéo sur la page
     
     // ici je boucle dans toute les connexions actuelles..
     for (let id in connections) {
