@@ -9,8 +9,6 @@ const path = require("path") // récuperer l'id de la room
 const bcrypt = require('bcrypt');
 let xss = require("xss")
 const jwt = require('jsonwebtoken');
-const session = require('express-session');
-const { authenticateToken } = require('./middleware/Auth');
 
 let server = http.createServer(app)
 let io = require('socket.io')(server, {
@@ -307,12 +305,6 @@ app.post('/login', (req, res) => {
 	const  cleanEmail = sanitizeString(email)
 	const cleanPassword = sanitizeString(password)
 
-	app.use(session({
-		secret: process.env.JWT_SECRET,
-		resave: false, // je veux que la session soit completement détruite après déconnexion 
-		saveUninitialized: false,
-	}));
-
 	const query = 'SELECT * FROM users WHERE email = ?';
 	connection.query(query, [cleanEmail], (err, results) => {
 		
@@ -343,10 +335,6 @@ app.post('/login', (req, res) => {
 		});
 	});
 });
-
-
-//verif token
-app.use('/adminPanel', authenticateToken); // "/adminPanel" sera dans ma request dans athenticateToken
 
 
 
