@@ -1,8 +1,8 @@
-# HDMeet (react, node)
+# HDMeet (react/node video conference app)
 
-coucou,
+Hey,
 
 yarn install & yarn dev
-vous pouvez check .env si besoin
+you can check out .env if needed
 
 @+
