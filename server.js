@@ -314,7 +314,7 @@ app.post('/login', (req, res) => {
 
 		const user = results[0];
 
-		if(results[0].role !== "ADMIN"){
+		if(user.role !== "ADMIN"){
 			return res.status(403).json({error : "Vous n'êtes pas admin, zou !"})
 		}
 
